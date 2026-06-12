@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 import { SiteHeader } from '@/components/site-header';
 
 const steps = [
@@ -108,8 +109,9 @@ export default function HomePage() {
         </Link>
       </section>
 
-      <footer className="border-t border-slate-800 px-4 py-6 text-center text-sm text-slate-500">
-        🚗 Careff — viajes compartidos sin esfuerzo · Hecho con datos abiertos de OpenStreetMap
+      <footer className="flex flex-col items-center gap-2 border-t border-slate-800 px-4 py-6 text-center text-sm text-slate-500">
+        <Logo />
+        <p>Viajes compartidos sin esfuerzo · Hecho con datos abiertos de OpenStreetMap</p>
       </footer>
     </div>
   );

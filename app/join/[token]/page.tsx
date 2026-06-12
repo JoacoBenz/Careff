@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PROFILE_COOKIE, parseProfileCookie } from '@/lib/profile-cookie';
+import { Logo } from '@/components/logo';
 import { SiteHeader } from '@/components/site-header';
 import { JoinGroupForm, type JoinFormInitial } from '@/components/join-group-form';
 
@@ -44,7 +45,9 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-10">
         <header className="mb-6 text-center">
-          <p className="text-3xl">🚗</p>
+          <span className="flex justify-center">
+            <Logo withWordmark={false} />
+          </span>
           <h1 className="mt-2 text-2xl font-bold text-white">
             {group.owner.name} te invitó a «{group.name}»
           </h1>
