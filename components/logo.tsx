@@ -1,37 +1,36 @@
 /**
- * Bexoxvar brand mark + wordmark. Placeholder vector drawn to match the
- * night-flight theme — replace this component's SVG with the real logo asset
- * when available (or drop an <img src="/logo.svg" /> in its place).
+ * Careff brand lockup: the official Bexovar mark (from
+ * JoacoBenz/Bexovar-website, assets/favicon.svg — navy tile, white stem,
+ * sky-blue figure-8 "B") next to the Careff wordmark.
  */
 export function Logo({ withWordmark = true }: { withWordmark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <svg viewBox="0 0 32 32" className="h-8 w-8" aria-hidden>
-        <defs>
-          <linearGradient id="bx-bg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="100%" stopColor="#fbbf24" />
-          </linearGradient>
-        </defs>
-        <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#bx-bg)" />
-        {/* route through the city: pickups to destination */}
+      <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden>
+        <rect width="48" height="48" rx="9" fill="#0D1B2A" />
+        <rect x="13" y="11" width="3" height="26" fill="#FFFFFF" />
         <path
-          d="M7 24 L13 11 L19 18 L25 8"
+          d="M16 11 L27 11 L33 17.5 L27 24 L16 24"
+          stroke="#38BDF8"
+          strokeWidth="3"
+          strokeLinejoin="miter"
           fill="none"
-          stroke="#1c1003"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         />
-        <circle cx="7" cy="24" r="2.6" fill="#1c1003" />
-        <circle cx="25" cy="8" r="3.2" fill="#fff" stroke="#1c1003" strokeWidth="1.8" />
+        <path
+          d="M16 24 L28 24 L34 30.5 L28 37 L16 37"
+          stroke="#38BDF8"
+          strokeWidth="3"
+          strokeLinejoin="miter"
+          fill="none"
+        />
+        <circle cx="14.5" cy="11" r="2.8" fill="#FFFFFF" />
       </svg>
       {withWordmark && (
         <span
-          className="font-[600] text-lg tracking-tight text-white"
+          className="text-lg font-[600] tracking-tight text-white"
           style={{ fontFamily: "'Space Grotesk', 'Inter', sans-serif" }}
         >
-          bexoxvar
+          Careff
         </span>
       )}
     </span>
