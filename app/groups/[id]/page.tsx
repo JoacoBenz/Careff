@@ -41,12 +41,12 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{group.name}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-white">{group.name}</h1>
+            <p className="text-sm text-slate-400">
               {members.length} integrante{members.length === 1 ? '' : 's'}
             </p>
           </div>
-          <Link href="/groups" className="text-sm text-slate-500 underline">
+          <Link href="/groups" className="link-sweep text-sm text-amber-300">
             ← Mis grupos
           </Link>
         </header>
@@ -54,7 +54,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         <InviteBox inviteUrl={inviteUrl} groupName={group.name} />
 
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Integrantes</h2>
+          <h2 className="mb-3 font-semibold text-white">Integrantes</h2>
           <MemberList groupId={group.id} members={members} />
         </section>
 

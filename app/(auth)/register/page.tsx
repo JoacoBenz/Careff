@@ -87,13 +87,13 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn-glow w-full rounded-lg py-2 disabled:opacity-50"
         >
           {loading ? 'Creando…' : 'Crear cuenta'}
         </button>
         <p className="text-center text-sm text-gray-500">
           ¿Ya tenés cuenta?{' '}
-          <Link href="/login" className="underline">
+          <Link href="/login" className="link-sweep font-medium text-emerald-700">
             Iniciar sesión
           </Link>
         </p>

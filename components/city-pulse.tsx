@@ -7,6 +7,8 @@ interface Node {
   y: number;
   vx: number;
   vy: number;
+  color: string;
+  size: number;
 }
 
 interface Pulse {
@@ -18,6 +20,17 @@ interface Pulse {
 
 const LINK_DISTANCE = 130;
 const MOUSE_RADIUS = 180;
+
+// City-at-night palette: mostly warm sodium-vapor amber, a few warm-white
+// and the occasional cool LED, like looking down from a plane window.
+const LIGHT_COLORS = [
+  '251, 191, 36', // amber
+  '251, 191, 36',
+  '245, 158, 11', // deep amber
+  '252, 211, 77', // light amber
+  '254, 243, 199', // warm white
+  '147, 197, 253', // cool LED blue
+];
 
 /**
  * Animated "electric city map" background: drifting intersection dots linked
@@ -52,6 +65,8 @@ export function CityPulse() {
         y: Math.random() * window.innerHeight,
         vx: (Math.random() - 0.5) * 0.25,
         vy: (Math.random() - 0.5) * 0.25,
+        color: LIGHT_COLORS[Math.floor(Math.random() * LIGHT_COLORS.length)],
+        size: 1.2 + Math.random() * 1.4,
       }));
       pulses = [];
     }
@@ -79,7 +94,17 @@ export function CityPulse() {
       if (!canvas || !ctx) return;
       const w = window.innerWidth;
       const h = window.innerHeight;
-      ctx.clearRect(0, 0, w, h);
+      // Night sky base with a faint warm city-glow on the horizon.
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#030712');
+      sky.addColorStop(1, '#0b1020');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+      const horizon = ctx.createRadialGradient(w / 2, h * 1.15, 0, w / 2, h * 1.15, h * 0.9);
+      horizon.addColorStop(0, 'rgba(245, 158, 11, 0.07)');
+      horizon.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = horizon;
+      ctx.fillRect(0, 0, w, h);
       frame++;
 
       for (const node of nodes) {
@@ -110,9 +135,9 @@ export function CityPulse() {
             0,
             1 - Math.hypot(midX - mouse.x, midY - mouse.y) / MOUSE_RADIUS,
           );
-          const alpha = (1 - d / LINK_DISTANCE) * (0.1 + mouseBoost * 0.45);
-          ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
-          ctx.lineWidth = 1 + mouseBoost;
+          const alpha = (1 - d / LINK_DISTANCE) * (0.08 + mouseBoost * 0.4);
+          ctx.strokeStyle = `rgba(251, 191, 36, ${alpha})`;
+          ctx.lineWidth = 0.8 + mouseBoost;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -123,10 +148,16 @@ export function CityPulse() {
       for (const node of nodes) {
         const dm = Math.hypot(node.x - mouse.x, node.y - mouse.y);
         const glow = Math.max(0, 1 - dm / MOUSE_RADIUS);
-        ctx.fillStyle = `rgba(5, 150, 105, ${0.3 + glow * 0.6})`;
+        // Soft halo so every light blooms like through a plane window.
+        const flicker = 0.85 + 0.15 * Math.sin(frame * 0.05 + node.x);
+        ctx.save();
+        ctx.shadowColor = `rgba(${node.color}, 0.9)`;
+        ctx.shadowBlur = 6 + glow * 10;
+        ctx.fillStyle = `rgba(${node.color}, ${(0.55 + glow * 0.45) * flicker})`;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 1.6 + glow * 1.6, 0, Math.PI * 2);
+        ctx.arc(node.x, node.y, node.size + glow * 1.6, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       }
 
       if (!reducedMotion) {
@@ -136,12 +167,13 @@ export function CityPulse() {
           p.progress += p.speed;
           const x = p.from.x + (p.to.x - p.from.x) * p.progress;
           const y = p.from.y + (p.to.y - p.from.y) * p.progress;
+          // Headlights running down an avenue.
           ctx.save();
-          ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
-          ctx.shadowBlur = 8;
-          ctx.fillStyle = 'rgba(52, 211, 153, 0.95)';
+          ctx.shadowColor = 'rgba(254, 243, 199, 0.95)';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgba(255, 251, 235, 0.95)';
           ctx.beginPath();
-          ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+          ctx.arc(x, y, 1.9, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }

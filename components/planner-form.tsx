@@ -65,6 +65,12 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlanResponse | null>(null);
 
+  // Live seat budget: passengers can never outnumber the seats the drivers
+  // bring, so the "+ Agregar pasajero" button locks when the cars are full.
+  const totalSeats = drivers.reduce((sum, d) => sum + (Number(d.capacity) || 0), 0);
+  const seatsFull = passengers.length >= totalSeats;
+  const overCapacity = passengers.length > totalSeats;
+
   function updateDriver(index: number, patch: Partial<DriverRow>) {
     setDrivers((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
@@ -193,13 +199,17 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
               setDrivers((rows) => [...rows, { name: '', address: '', capacity: '3' }])
             }
             disabled={drivers.length >= 10}
-            className="mt-3 text-sm font-medium text-emerald-700 hover:underline disabled:opacity-40"
+            className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
           >
             + Agregar conductor
           </button>
         </SectionCard>
 
-        <SectionCard step="3" title="Pasajeros" hint="Quiénes necesitan que los pasen a buscar.">
+        <SectionCard
+          step="3"
+          title="Pasajeros"
+          hint={`Quiénes necesitan que los pasen a buscar. Asientos: ${passengers.length}/${totalSeats}.`}
+        >
           <div className="space-y-2">
             {passengers.map((passenger, i) => (
               <div key={i} className="flex gap-2">
@@ -232,13 +242,25 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
           <button
             type="button"
             onClick={() => setPassengers((rows) => [...rows, { name: '', address: '' }])}
-            disabled={passengers.length >= 30}
-            className="mt-3 text-sm font-medium text-emerald-700 hover:underline disabled:opacity-40"
+            disabled={passengers.length >= 30 || seatsFull}
+            className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
           >
             + Agregar pasajero
           </button>
+          {seatsFull && (
+            <p className="mt-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800">
+              🚗 Asientos completos ({totalSeats}). Para sumar más pasajeros, agregá otro conductor
+              o aumentá los asientos libres.
+            </p>
+          )}
         </SectionCard>
 
+        {overCapacity && (
+          <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">
+            Hay {passengers.length} pasajeros pero solo {totalSeats} asiento
+            {totalSeats === 1 ? '' : 's'}. Quitá pasajeros o sumá asientos para poder calcular.
+          </p>
+        )}
         {error && (
           <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
             {error}
@@ -247,8 +269,8 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+          disabled={loading || overCapacity}
+          className="btn-glow w-full rounded-xl py-3 text-base disabled:opacity-50"
         >
           {loading ? 'Calculando rutas…' : '✨ Calcular distribución'}
         </button>
@@ -256,11 +278,11 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
 
       {result && (
         <section id="resultado" className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Resultado</h2>
+          <h2 className="text-lg font-semibold text-white">Resultado</h2>
           {!result.saved && (
-            <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+            <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm text-slate-600">
               💾 Este plan no quedó guardado.{' '}
-              <Link href="/register" className="font-medium text-emerald-700 underline">
+              <Link href="/register" className="link-sweep font-medium text-emerald-700">
                 Creá una cuenta gratis
               </Link>{' '}
               para guardar tus planes y compartirlos con un link.

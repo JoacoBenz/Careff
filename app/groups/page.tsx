@@ -23,8 +23,8 @@ export default async function GroupsPage() {
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Mis grupos</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-white">Mis grupos</h1>
+          <p className="text-sm text-slate-400">
             Creá un grupo, compartí el link y cada persona se suma sola diciendo si tiene auto y
             cuántos asientos libres.
           </p>

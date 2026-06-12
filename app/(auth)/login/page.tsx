@@ -67,13 +67,13 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn-glow w-full rounded-lg py-2 disabled:opacity-50"
         >
           {loading ? 'Ingresando…' : 'Ingresar'}
         </button>
         <p className="text-center text-sm text-gray-500">
           ¿No tenés cuenta?{' '}
-          <Link href="/register" className="underline">
+          <Link href="/register" className="link-sweep font-medium text-emerald-700">
             Crear cuenta gratis
           </Link>
         </p>

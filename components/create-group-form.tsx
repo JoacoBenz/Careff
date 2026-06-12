@@ -45,7 +45,7 @@ export function CreateGroupForm() {
       <button
         type="submit"
         disabled={loading}
-        className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+        className="btn-glow shrink-0 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
       >
         {loading ? 'Creando…' : 'Crear grupo'}
       </button>

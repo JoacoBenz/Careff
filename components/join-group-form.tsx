@@ -76,7 +76,7 @@ export function JoinGroupForm({
         </p>
         <p className="mt-4 text-sm text-slate-500">
           ¿Organizás salidas vos también?{' '}
-          <Link href="/register" className="font-medium text-emerald-700 underline">
+          <Link href="/register" className="link-sweep font-medium text-emerald-700">
             Creá tu grupo gratis
           </Link>
         </p>
@@ -167,7 +167,7 @@ export function JoinGroupForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-emerald-600 py-2.5 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
       >
         {loading ? 'Sumándote…' : 'Sumarme al grupo'}
       </button>

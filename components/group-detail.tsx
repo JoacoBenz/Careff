@@ -22,7 +22,7 @@ const inputClass =
 export function InviteBox({ inviteUrl, groupName }: { inviteUrl: string; groupName: string }) {
   const message = `🚗 Sumate al grupo «${groupName}» en Careff para organizar quién lleva a quién. Decí si tenés auto y desde dónde salís acá: ${inviteUrl}`;
   return (
-    <div className="rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 p-4">
+    <div className="rounded-xl border border-dashed border-amber-300/70 bg-white p-4">
       <p className="text-sm font-medium text-slate-700">
         Invitá al grupo: cada persona se suma sola con este link
       </p>
@@ -122,7 +122,8 @@ export function GroupPlanner({
   const drivers = members.filter((m) => m.hasCar && m.seats > 0);
   const passengers = members.filter((m) => !m.hasCar);
   const totalSeats = drivers.reduce((sum, d) => sum + d.seats, 0);
-  const ready = drivers.length > 0 && passengers.length > 0;
+  const overCapacity = passengers.length > totalSeats;
+  const ready = drivers.length > 0 && passengers.length > 0 && !overCapacity;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,7 +166,9 @@ export function GroupPlanner({
       </p>
       {!ready && (
         <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-          Para armar el viaje hace falta al menos un conductor con asientos y un pasajero.
+          {overCapacity
+            ? `Hay ${passengers.length} pasajeros pero solo ${totalSeats} asiento${totalSeats === 1 ? '' : 's'}. Hace falta otro conductor o más asientos libres para que entren todos.`
+            : 'Para armar el viaje hace falta al menos un conductor con asientos y un pasajero.'}
         </p>
       )}
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -200,7 +203,7 @@ export function GroupPlanner({
         <button
           type="submit"
           disabled={loading || !ready}
-          className="w-full rounded-xl bg-emerald-600 py-2.5 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
         >
           {loading ? 'Calculando rutas…' : '✨ Calcular quién lleva a quién'}
         </button>

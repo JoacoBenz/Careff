@@ -41,58 +41,58 @@ export default function HomePage() {
     <div className="min-h-screen">
       <SiteHeader />
 
-      <section className="bg-gradient-to-b from-emerald-50/80 to-transparent px-4 pb-16 pt-20 text-center">
-        <p className="mx-auto mb-4 w-fit rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-700">
+      <section className="px-4 pb-16 pt-20 text-center">
+        <p className="mx-auto mb-4 w-fit rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
           Gratis para siempre · Sin tarjeta de crédito
         </p>
-        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          ¿Quién lleva a quién? <span className="text-emerald-600">Resuelto en un minuto.</span>
+        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          ¿Quién lleva a quién? <span className="text-amber-400">Resuelto en un minuto.</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
+        <p className="mx-auto mt-4 max-w-xl text-lg text-slate-300">
           Para cumpleaños, partidos, salidas del club o cualquier plan en grupo: Careff decide qué
           auto busca a cada persona y arma la mejor ruta para cada conductor.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Link
-            href="/planner"
-            className="rounded-xl bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-md hover:bg-emerald-700"
-          >
+          <Link href="/planner" className="btn-glow rounded-xl px-6 py-3 text-base">
             Probalo ahora — sin registrarte
           </Link>
-          <Link
-            href="/register"
-            className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50"
-          >
+          <Link href="/register" className="btn-glass rounded-xl px-6 py-3 text-base font-semibold">
             Crear cuenta gratis
           </Link>
         </div>
       </section>
 
       <section className="mx-auto max-w-4xl px-4 py-14">
-        <h2 className="text-center text-2xl font-bold text-slate-900">Cómo funciona</h2>
+        <h2 className="text-center text-2xl font-bold text-white">Cómo funciona</h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-3">
           {steps.map((step, i) => (
-            <div key={step.title} className="rounded-2xl border border-slate-200 p-6">
+            <div
+              key={step.title}
+              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm"
+            >
               <p className="text-3xl">{step.emoji}</p>
-              <p className="mt-3 text-sm font-semibold text-emerald-700">Paso {i + 1}</p>
-              <h3 className="mt-1 font-semibold text-slate-900">{step.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{step.text}</p>
+              <p className="mt-3 text-sm font-semibold text-amber-400">Paso {i + 1}</p>
+              <h3 className="mt-1 font-semibold text-white">{step.title}</h3>
+              <p className="mt-2 text-sm text-slate-400">{step.text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-slate-50/70 px-4 py-14">
+      <section className="bg-slate-900/30 px-4 py-14">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-center text-2xl font-bold text-slate-900">
+          <h2 className="text-center text-2xl font-bold text-white">
             Pensado para que lo uses (y lo vuelvas a usar)
           </h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map(([emoji, title, text]) => (
-              <div key={title} className="rounded-xl bg-white p-5 shadow-sm">
+              <div
+                key={title}
+                className="rounded-xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-sm"
+              >
                 <p className="text-2xl">{emoji}</p>
-                <h3 className="mt-2 font-semibold text-slate-900">{title}</h3>
-                <p className="mt-1 text-sm text-slate-600">{text}</p>
+                <h3 className="mt-2 font-semibold text-white">{title}</h3>
+                <p className="mt-1 text-sm text-slate-400">{text}</p>
               </div>
             ))}
           </div>
@@ -100,18 +100,15 @@ export default function HomePage() {
       </section>
 
       <section className="px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold text-slate-900">
+        <h2 className="text-2xl font-bold text-white">
           El grupo ya tiene ganas de ir. Falta decidir quién maneja.
         </h2>
-        <Link
-          href="/planner"
-          className="mt-6 inline-block rounded-xl bg-emerald-600 px-8 py-3 text-base font-semibold text-white shadow-md hover:bg-emerald-700"
-        >
+        <Link href="/planner" className="btn-glow mt-6 inline-block rounded-xl px-8 py-3 text-base">
           Armar mi primer viaje
         </Link>
       </section>
 
-      <footer className="border-t border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+      <footer className="border-t border-slate-800 px-4 py-6 text-center text-sm text-slate-500">
         🚗 Careff — viajes compartidos sin esfuerzo · Hecho con datos abiertos de OpenStreetMap
       </footer>
     </div>

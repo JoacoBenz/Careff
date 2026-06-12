@@ -45,10 +45,10 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
       <main className="mx-auto max-w-md px-4 py-10">
         <header className="mb-6 text-center">
           <p className="text-3xl">🚗</p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">
+          <h1 className="mt-2 text-2xl font-bold text-white">
             {group.owner.name} te invitó a «{group.name}»
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-400">
             {group._count.members} persona
             {group._count.members === 1 ? ' ya se sumó' : 's ya se sumaron'} · Decí desde dónde
             salís y si llevás auto. Sin registrarte, gratis.

@@ -135,7 +135,7 @@ export function PlanResultView({
       </ul>
 
       {shareUrl && (
-        <div className="flex items-center gap-3 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-emerald-300 bg-white p-3">
           <CopyLinkButton url={shareUrl} />
           <p className="text-xs text-slate-500">
             Cualquiera con el link puede ver este plan (solo lectura).
