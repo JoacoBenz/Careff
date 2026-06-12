@@ -6,6 +6,9 @@ import { prisma } from './prisma';
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
+  // Required for self-hosted production (`next start`, Docker): Auth.js only
+  // auto-trusts the request host on Vercel or in dev.
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
