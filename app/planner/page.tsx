@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { PlannerForm } from '@/components/planner-form';
+import { LogoutButton } from '@/components/logout-button';
 
 export default async function PlannerPage() {
   const session = await auth();
@@ -16,9 +17,12 @@ export default async function PlannerPage() {
             Cargá conductores, pasajeros y destino. Careff arma la distribución más eficiente.
           </p>
         </div>
-        <Link href="/plans" className="text-sm underline">
-          Mis planes
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/plans" className="text-sm underline">
+            Mis planes
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
       <PlannerForm />
     </main>

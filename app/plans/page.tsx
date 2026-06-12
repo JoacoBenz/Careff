@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PlanResultView } from '@/components/planner-form';
+import { LogoutButton } from '@/components/logout-button';
 import type { CarpoolPlanResult } from '@/lib/carpool';
 
 export default async function PlansPage() {
@@ -19,9 +20,12 @@ export default async function PlansPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-10">
       <header className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mis planes</h1>
-        <Link href="/planner" className="text-sm underline">
-          Planificar otro viaje
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/planner" className="text-sm underline">
+            Planificar otro viaje
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
       {plans.length === 0 ? (
         <p className="text-gray-500">

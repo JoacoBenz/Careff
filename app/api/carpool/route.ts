@@ -20,11 +20,12 @@ export const POST = withAuth(
 
     const totalCapacity = drivers.reduce((sum, d) => sum + d.capacity, 0);
     if (passengers.length > totalCapacity) {
-      return apiError(
-        'CAPACITY_EXCEEDED',
-        `Hay ${passengers.length} pasajeros pero solo ${totalCapacity} asientos disponibles.`,
-        422,
-      );
+      const pax = passengers.length === 1 ? 'Hay 1 pasajero' : `Hay ${passengers.length} pasajeros`;
+      const seats =
+        totalCapacity === 1
+          ? 'solo 1 asiento disponible'
+          : `solo ${totalCapacity} asientos disponibles`;
+      return apiError('CAPACITY_EXCEEDED', `${pax} pero ${seats}.`, 422);
     }
 
     let distance;
