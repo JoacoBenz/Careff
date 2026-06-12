@@ -75,3 +75,13 @@ export const joinGroupSchema = z
   });
 
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
+
+// Shape of the remembered-profile cookie used to prefill the join form.
+export const profileCookieSchema = z.object({
+  name: z.string().max(80),
+  address: z.string().max(200),
+  hasCar: z.boolean(),
+  seats: z.number().int().min(0).max(8),
+});
+
+export type ProfileCookie = z.infer<typeof profileCookieSchema>;

@@ -8,11 +8,27 @@ import { AddressInput } from './address-input';
 const inputClass =
   'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
 
-export function JoinGroupForm({ token, groupName }: { token: string; groupName: string }) {
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [hasCar, setHasCar] = useState(false);
-  const [seats, setSeats] = useState('3');
+export interface JoinFormInitial {
+  name?: string;
+  address?: string;
+  hasCar?: boolean;
+  seats?: number;
+}
+
+export function JoinGroupForm({
+  token,
+  groupName,
+  initial,
+}: {
+  token: string;
+  groupName: string;
+  initial?: JoinFormInitial;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [address, setAddress] = useState(initial?.address ?? '');
+  const [hasCar, setHasCar] = useState(initial?.hasCar ?? false);
+  const [seats, setSeats] = useState(initial?.seats ? String(initial.seats) : '3');
+  const prefilledAddress = Boolean(initial?.address);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
@@ -95,6 +111,11 @@ export function JoinGroupForm({ token, groupName }: { token: string; groupName: 
             className={inputClass}
           />
         </div>
+        {prefilledAddress && (
+          <span className="mt-1 block text-xs text-emerald-700">
+            ✓ Usamos tu dirección guardada — podés cambiarla si salís desde otro lado.
+          </span>
+        )}
       </label>
 
       <fieldset className="rounded-lg border border-slate-200 p-3">

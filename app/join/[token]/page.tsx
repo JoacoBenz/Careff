@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { PROFILE_COOKIE, parseProfileCookie } from '@/lib/profile-cookie';
 import { SiteHeader } from '@/components/site-header';
-import { JoinGroupForm } from '@/components/join-group-form';
+import { JoinGroupForm, type JoinFormInitial } from '@/components/join-group-form';
 
 // Public: anyone with the invite link can add themselves to the group.
 export default async function JoinPage({ params }: { params: Promise<{ token: string }> }) {
@@ -11,6 +14,30 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
     include: { owner: { select: { name: true } }, _count: { select: { members: true } } },
   });
   if (!group) notFound();
+
+  // Prefill: logged-in users get their saved default address; anonymous
+  // visitors get whatever they declared the first time (profile cookie).
+  let initial: JoinFormInitial | null = null;
+  const session = await auth();
+  if (session?.user) {
+    const user = await prisma.user.findUnique({
+      where: { id: Number(session.user.id) },
+      select: { name: true, defaultAddress: true },
+    });
+    if (user) initial = { name: user.name, address: user.defaultAddress ?? '' };
+  }
+  if (!initial) {
+    const cookieStore = await cookies();
+    const profile = parseProfileCookie(cookieStore.get(PROFILE_COOKIE)?.value);
+    if (profile) {
+      initial = {
+        name: profile.name,
+        address: profile.address,
+        hasCar: profile.hasCar,
+        seats: profile.seats,
+      };
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -27,7 +54,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
             salís y si llevás auto. Sin registrarte, gratis.
           </p>
         </header>
-        <JoinGroupForm token={token} groupName={group.name} />
+        <JoinGroupForm token={token} groupName={group.name} initial={initial ?? undefined} />
       </main>
     </div>
   );

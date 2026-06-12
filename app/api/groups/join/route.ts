@@ -4,8 +4,10 @@ import {
   withValidation,
   type OptionalAuthContext,
 } from '@/lib/api-handler';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { joinGroupSchema, type JoinGroupInput } from '@/lib/validators';
+import { PROFILE_COOKIE } from '@/lib/profile-cookie';
 
 const MAX_MEMBERS = 40;
 
@@ -13,7 +15,7 @@ const MAX_MEMBERS = 40;
 export const POST = withOptionalAuth(
   withValidation<JoinGroupInput, OptionalAuthContext>(
     joinGroupSchema,
-    async (_request, { data }) => {
+    async (_request, { session, data }) => {
       const group = await prisma.group.findUnique({
         where: { inviteToken: data.token },
         include: { _count: { select: { members: true } } },
@@ -34,6 +36,32 @@ export const POST = withOptionalAuth(
           seats: data.hasCar ? data.seats : 0,
         },
       });
+
+      // The FIRST departure address someone declares becomes their default
+      // (updateMany with defaultAddress: null makes later joins no-ops).
+      if (session) {
+        await prisma.user.updateMany({
+          where: { id: Number(session.user.id), defaultAddress: null },
+          data: { defaultAddress: data.address },
+        });
+      }
+
+      // Anonymous members get the same memory via a long-lived cookie.
+      const cookieStore = await cookies();
+      if (!cookieStore.get(PROFILE_COOKIE)) {
+        cookieStore.set(
+          PROFILE_COOKIE,
+          encodeURIComponent(
+            JSON.stringify({
+              name: data.name,
+              address: data.address,
+              hasCar: data.hasCar,
+              seats: data.hasCar ? data.seats : 0,
+            }),
+          ),
+          { maxAge: 60 * 60 * 24 * 365, path: '/', sameSite: 'lax' },
+        );
+      }
 
       return Response.json({ id: member.id, groupName: group.name }, { status: 201 });
     },
