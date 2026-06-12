@@ -1,30 +1,25 @@
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { PlannerForm } from '@/components/planner-form';
-import { LogoutButton } from '@/components/logout-button';
+import { SiteHeader } from '@/components/site-header';
 
+// Public on purpose (guest mode): anyone can compute a plan; saving requires
+// an account and happens automatically when logged in.
 export default async function PlannerPage() {
   const session = await auth();
-  if (!session?.user) redirect('/login');
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Planificar un viaje</h1>
-          <p className="text-sm text-gray-500">
-            Cargá conductores, pasajeros y destino. Careff arma la distribución más eficiente.
+    <div className="min-h-screen bg-slate-50">
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Planificar un viaje</h1>
+          <p className="text-sm text-slate-500">
+            Cargá conductores, pasajeros y destino. Careff asigna cada pasajero al auto más cercano
+            y arma la ruta de cada conductor.
           </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/plans" className="text-sm underline">
-            Mis planes
-          </Link>
-          <LogoutButton />
-        </div>
-      </header>
-      <PlannerForm />
-    </main>
+        </header>
+        <PlannerForm loggedIn={Boolean(session?.user)} />
+      </main>
+    </div>
   );
 }

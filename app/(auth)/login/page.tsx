@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -66,10 +67,16 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
         >
           {loading ? 'Ingresando…' : 'Ingresar'}
         </button>
+        <p className="text-center text-sm text-gray-500">
+          ¿No tenés cuenta?{' '}
+          <Link href="/register" className="underline">
+            Crear cuenta gratis
+          </Link>
+        </p>
       </form>
     </main>
   );

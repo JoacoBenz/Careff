@@ -1,14 +1,19 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { PlanResultView } from '@/components/planner-form';
-import { LogoutButton } from '@/components/logout-button';
+import { PlanResultView } from '@/components/plan-result';
+import { SiteHeader } from '@/components/site-header';
 import type { CarpoolPlanResult } from '@/lib/carpool';
 
 export default async function PlansPage() {
   const session = await auth();
   if (!session?.user) redirect('/login');
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get('host') ?? 'localhost:3000';
+  const protocol = requestHeaders.get('x-forwarded-proto') ?? 'http';
 
   const plans = await prisma.carpoolPlan.findMany({
     where: { userId: Number(session.user.id) },
@@ -17,39 +22,48 @@ export default async function PlansPage() {
   });
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Mis planes</h1>
-        <div className="flex items-center gap-4">
-          <Link href="/planner" className="text-sm underline">
-            Planificar otro viaje
+    <div className="min-h-screen bg-slate-50">
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        <header className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-900">Mis planes</h1>
+          <Link
+            href="/planner"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            + Nuevo viaje
           </Link>
-          <LogoutButton />
-        </div>
-      </header>
-      {plans.length === 0 ? (
-        <p className="text-gray-500">
-          Todavía no guardaste ningún plan.{' '}
-          <Link href="/planner" className="underline">
-            Creá el primero
-          </Link>
-          .
-        </p>
-      ) : (
-        <ul className="space-y-8">
-          {plans.map((plan) => (
-            <li key={plan.id}>
-              <div className="mb-2">
-                <h2 className="text-lg font-semibold">{plan.title}</h2>
-                <p className="text-sm text-gray-500">
-                  {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
-                </p>
-              </div>
-              <PlanResultView plan={plan.result as unknown as CarpoolPlanResult} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        </header>
+        {plans.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <p className="text-3xl">🚗</p>
+            <p className="mt-2 text-slate-600">Todavía no guardaste ningún plan.</p>
+            <Link href="/planner" className="font-medium text-emerald-700 underline">
+              Armá el primero en un minuto
+            </Link>
+          </div>
+        ) : (
+          <ul className="space-y-10">
+            {plans.map((plan) => (
+              <li key={plan.id}>
+                <div className="mb-3">
+                  <h2 className="text-lg font-semibold text-slate-900">{plan.title}</h2>
+                  <p className="text-sm text-slate-500">
+                    🏁 {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
+                  </p>
+                </div>
+                <PlanResultView
+                  plan={plan.result as unknown as CarpoolPlanResult}
+                  title={plan.title}
+                  shareUrl={
+                    plan.shareToken ? `${protocol}://${host}/p/${plan.shareToken}` : undefined
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
   );
 }

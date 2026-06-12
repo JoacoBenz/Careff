@@ -8,6 +8,11 @@ distances and a Google Maps link.
 Ported from the original _MartinaAutos_ Python (PyQt5/Flask) prototype to a
 production web app.
 
+Built to convert: **guest mode** (compute a plan with no account — registering is
+only needed to save), **address autocomplete** while typing, **per-driver WhatsApp
+share** with the route prefilled, and **public share links** (`/p/<token>`) so the
+whole group can see the plan.
+
 ## Why it's free to run
 
 - **Geocoding**: [Nominatim](https://nominatim.org) public instance (OpenStreetMap) — no API key.

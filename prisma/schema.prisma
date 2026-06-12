@@ -27,6 +27,7 @@ model CarpoolPlan {
   destination String
   input       Json
   result      Json
+  shareToken  String?  @unique @map("share_token")
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([userId])

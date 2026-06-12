@@ -52,3 +52,7 @@ export const carpoolPlanSchema = z.object({
 });
 
 export type CarpoolPlanInput = z.infer<typeof carpoolPlanSchema>;
+
+export const geoSearchSchema = z.object({
+  q: z.string().min(3).max(200),
+});

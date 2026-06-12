@@ -32,6 +32,28 @@ interface Coordinates {
   lon: number;
 }
 
+export interface AddressSuggestion {
+  label: string;
+  lat: number;
+  lon: number;
+}
+
+/** Autocomplete suggestions for the planner's address inputs. */
+export async function searchAddresses(query: string): Promise<AddressSuggestion[]> {
+  const url = `${NOMINATIM_URL}/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
+  const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+  if (!response.ok) {
+    throw new GeoProviderError(`Geocoder responded with status ${response.status}`);
+  }
+  const results = (await response.json()) as { display_name?: string; lat: string; lon: string }[];
+  if (!Array.isArray(results)) return [];
+  return results.map((r) => ({
+    label: r.display_name ?? '',
+    lat: Number(r.lat),
+    lon: Number(r.lon),
+  }));
+}
+
 // Process-wide cache: repeated plans usually share addresses, and caching keeps
 // us polite with the public Nominatim instance.
 const geocodeCache = new Map<string, Coordinates>();
