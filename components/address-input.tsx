@@ -75,8 +75,10 @@ export function AddressInput({
       />
       {open && (
         <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-          {suggestions.map((s) => (
-            <li key={`${s.lat},${s.lon}`}>
+          {suggestions.map((s, i) => (
+            // Labels are deduped server-side; index guards against any
+            // remaining collision (Nominatim can repeat coordinates).
+            <li key={`${i}-${s.label}`}>
               <button
                 type="button"
                 onMouseDown={() => {

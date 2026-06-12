@@ -47,11 +47,17 @@ export async function searchAddresses(query: string): Promise<AddressSuggestion[
   }
   const results = (await response.json()) as { display_name?: string; lat: string; lon: string }[];
   if (!Array.isArray(results)) return [];
-  return results.map((r) => ({
-    label: r.display_name ?? '',
-    lat: Number(r.lat),
-    lon: Number(r.lon),
-  }));
+  // Nominatim can return the same place twice (e.g. as node and as way);
+  // dedupe by label so the dropdown never shows identical entries.
+  const seen = new Set<string>();
+  const suggestions: AddressSuggestion[] = [];
+  for (const r of results) {
+    const label = r.display_name ?? '';
+    if (label.length === 0 || seen.has(label)) continue;
+    seen.add(label);
+    suggestions.push({ label, lat: Number(r.lat), lon: Number(r.lon) });
+  }
+  return suggestions;
 }
 
 // Process-wide cache: repeated plans usually share addresses, and caching keeps
