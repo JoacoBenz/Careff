@@ -40,11 +40,11 @@ Next.js App Router + TypeScript + Prisma/PostgreSQL + NextAuth + Zod + Vitest.
 ## Setup
 
 ```bash
-cp .env.example .env.local   # fill in values
+cp .env.example .env.local   # fill in values (Windows: copy .env.example .env.local)
 docker compose up -d db      # local PostgreSQL
-npm install
-npm run db:migrate           # apply schema
-npm run db:seed              # seed admin user
+npm install                  # also generates the Prisma client (postinstall)
+npx prisma migrate deploy    # apply schema
+npm run db:seed              # optional: seed admin user
 npm run dev
 ```
 
