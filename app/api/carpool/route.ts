@@ -8,13 +8,9 @@ import {
 } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { carpoolPlanSchema, type CarpoolPlanInput } from '@/lib/validators';
-import { planCarpool } from '@/lib/carpool';
+import { planCarpool, withCity } from '@/lib/carpool';
 import { buildDistanceFn, AddressNotFoundError, GeoProviderError } from '@/lib/geo';
 import type { Prisma } from '@/app/generated/prisma/client';
-
-function withCity(address: string, city?: string): string {
-  return city ? `${address}, ${city}` : address;
-}
 
 // Guest mode: anyone can compute a plan; only logged-in users get it saved
 // (with a public share token).

@@ -10,7 +10,7 @@ const steps = [
   {
     emoji: '⚡',
     title: 'Careff arma las rutas',
-    text: 'Cada pasajero queda en el auto más cercano y cada conductor recibe su recorrido en orden, con distancias reales.',
+    text: 'Con varios autos, cada pasajero va en el que menos desvía su ruta: el conjunto de viajes más corto posible, con distancias reales.',
   },
   {
     emoji: '💬',

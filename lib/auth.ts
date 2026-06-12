@@ -9,6 +9,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Required for self-hosted production (`next start`, Docker): Auth.js only
   // auto-trusts the request host on Vercel or in dev.
   trustHost: true,
+  // App-specific cookie name: stale `authjs.session-token` cookies left on
+  // localhost by other projects otherwise fail decryption and spam
+  // JWTSessionError on every request.
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === 'production'
+          ? '__Secure-careff.session-token'
+          : 'careff.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
   providers: [
     Credentials({
       credentials: {

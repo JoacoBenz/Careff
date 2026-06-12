@@ -23,6 +23,22 @@ export interface PassengerInput {
 /** Driving distance in meters between two known addresses. */
 export type DistanceFn = (from: string, to: string) => number;
 
+/**
+ * Appends the trip's city to a hand-typed address so it geocodes, but leaves
+ * the address alone when it already mentions the city or is a canonical
+ * geocoder result (picked from autocomplete — those always carry several
+ * comma-separated parts and re-appending the city breaks geocoding).
+ */
+export function withCity(address: string, city?: string): string {
+  if (!city) return address;
+  const trimmedCity = city.trim();
+  if (trimmedCity.length === 0) return address;
+  const isCanonical = address.split(',').length >= 4;
+  const mentionsCity = address.toLowerCase().includes(trimmedCity.toLowerCase());
+  if (isCanonical || mentionsCity) return address;
+  return `${address}, ${trimmedCity}`;
+}
+
 export interface RouteStop {
   name: string;
   address: string;
@@ -56,26 +72,6 @@ export function generateMapUrl(route: string[]): string {
   return waypoints ? `${url}&waypoints=${waypoints}` : url;
 }
 
-function orderPickups(start: string, pickups: RouteStop[], distance: DistanceFn): RouteStop[] {
-  const remaining = [...pickups];
-  const ordered: RouteStop[] = [];
-  let current = start;
-  while (remaining.length > 0) {
-    let bestIndex = 0;
-    for (let i = 1; i < remaining.length; i++) {
-      if (
-        distance(current, remaining[i].address) < distance(current, remaining[bestIndex].address)
-      ) {
-        bestIndex = i;
-      }
-    }
-    const [next] = remaining.splice(bestIndex, 1);
-    ordered.push(next);
-    current = next.address;
-  }
-  return ordered;
-}
-
 function routeDistance(addresses: string[], distance: DistanceFn): number {
   let total = 0;
   for (let i = 0; i < addresses.length - 1; i++) {
@@ -84,6 +80,13 @@ function routeDistance(addresses: string[], distance: DistanceFn): number {
   return total;
 }
 
+/**
+ * Global cheapest-insertion: repeatedly pick the (passenger, driver, position)
+ * whose insertion adds the least distance across ALL drivers' routes. Unlike
+ * "nearest driver by home", this sends a passenger to whichever car can detour
+ * for them most cheaply, so the trip set as a whole stays efficient even with
+ * several drivers.
+ */
 export function planCarpool(
   drivers: DriverInput[],
   passengers: PassengerInput[],
@@ -91,32 +94,53 @@ export function planCarpool(
   distance: DistanceFn,
 ): CarpoolPlanResult {
   const seatsLeft = new Map(drivers.map((d) => [d.name, d.capacity]));
+  const stopsByDriver = new Map<string, RouteStop[]>(drivers.map((d) => [d.name, []]));
   const assignments: Record<string, string> = {};
-  const pickupsByDriver = new Map<string, RouteStop[]>(drivers.map((d) => [d.name, []]));
   const unassigned: string[] = [];
 
-  for (const passenger of passengers) {
-    let nearest: DriverInput | null = null;
-    let nearestDistance = Infinity;
-    for (const driver of drivers) {
-      if ((seatsLeft.get(driver.name) ?? 0) <= 0) continue;
-      const d = distance(passenger.address, driver.address);
-      if (d < nearestDistance) {
-        nearestDistance = d;
-        nearest = driver;
+  const pool = [...passengers];
+  while (pool.length > 0) {
+    let best: {
+      poolIndex: number;
+      driver: DriverInput;
+      position: number;
+      cost: number;
+    } | null = null;
+
+    for (let p = 0; p < pool.length; p++) {
+      const passenger = pool[p];
+      for (const driver of drivers) {
+        if ((seatsLeft.get(driver.name) ?? 0) <= 0) continue;
+        const stops = stopsByDriver.get(driver.name) ?? [];
+        const route = [driver.address, ...stops.map((s) => s.address), destination];
+        for (let position = 0; position < route.length - 1; position++) {
+          const cost =
+            distance(route[position], passenger.address) +
+            distance(passenger.address, route[position + 1]) -
+            distance(route[position], route[position + 1]);
+          if (best === null || cost < best.cost) {
+            best = { poolIndex: p, driver, position, cost };
+          }
+        }
       }
     }
-    if (nearest === null) {
-      unassigned.push(passenger.name);
-      continue;
+
+    if (best === null) {
+      // No seats left anywhere: everyone still in the pool stays unassigned.
+      unassigned.push(...pool.map((p) => p.name));
+      break;
     }
-    seatsLeft.set(nearest.name, (seatsLeft.get(nearest.name) ?? 0) - 1);
-    assignments[passenger.name] = nearest.name;
-    pickupsByDriver.get(nearest.name)?.push({ name: passenger.name, address: passenger.address });
+
+    const [passenger] = pool.splice(best.poolIndex, 1);
+    seatsLeft.set(best.driver.name, (seatsLeft.get(best.driver.name) ?? 0) - 1);
+    assignments[passenger.name] = best.driver.name;
+    stopsByDriver
+      .get(best.driver.name)
+      ?.splice(best.position, 0, { name: passenger.name, address: passenger.address });
   }
 
   const routes: DriverRoute[] = drivers.map((driver) => {
-    const stops = orderPickups(driver.address, pickupsByDriver.get(driver.name) ?? [], distance);
+    const stops = stopsByDriver.get(driver.name) ?? [];
     const addresses = [driver.address, ...stops.map((s) => s.address), destination];
     return {
       driver: driver.name,

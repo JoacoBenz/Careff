@@ -1,5 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { planCarpool, generateMapUrl, type DistanceFn } from '@/lib/carpool';
+import { planCarpool, generateMapUrl, withCity, type DistanceFn } from '@/lib/carpool';
+
+describe('withCity', () => {
+  it('appends the city to short hand-typed addresses', () => {
+    expect(withCity('Senillosa 200', 'Buenos Aires')).toBe('Senillosa 200, Buenos Aires');
+  });
+
+  it('leaves canonical autocomplete addresses untouched', () => {
+    const canonical =
+      'Doctor Enrique Finochietto 990, Parque Patricios, Buenos Aires, Comuna 4, Ciudad Autónoma de Buenos Aires, C1264AAN, Argentina';
+    expect(withCity(canonical, 'Buenos Aires, Argentina')).toBe(canonical);
+  });
+
+  it('does not duplicate a city the address already mentions', () => {
+    expect(withCity('Av. Corrientes 1234, buenos aires', 'Buenos Aires')).toBe(
+      'Av. Corrientes 1234, buenos aires',
+    );
+  });
+
+  it('ignores empty or blank city values', () => {
+    expect(withCity('Senillosa 200')).toBe('Senillosa 200');
+    expect(withCity('Senillosa 200', '   ')).toBe('Senillosa 200');
+  });
+});
 
 /**
  * Synthetic geography: addresses are points on a line, distance is the
@@ -93,6 +116,35 @@ describe('planCarpool', () => {
     expect(beto?.stops).toEqual([]);
     expect(beto?.addresses).toEqual(['driver-b', 'destination']);
     expect(beto?.distanceMeters).toBe(50);
+  });
+});
+
+describe('planCarpool — multi-driver efficiency', () => {
+  it('assigns to the driver whose route detours least, not the one who lives closest', () => {
+    // X lives closest to Ana's home (5 vs 8) but is completely off Ana's way
+    // to the destination, while sitting almost exactly on Beto's way.
+    const d: Record<string, Record<string, number>> = {
+      'a-home': { x: 5, dest: 10, 'b-home': 100 },
+      'b-home': { x: 8, dest: 30, 'a-home': 100 },
+      x: { 'a-home': 5, 'b-home': 8, dest: 20 },
+      dest: { 'a-home': 10, 'b-home': 30, x: 20 },
+    };
+    const mapDistance: DistanceFn = (from, to) => (from === to ? 0 : d[from][to]);
+
+    const result = planCarpool(
+      [
+        { name: 'Ana', address: 'a-home', capacity: 1 },
+        { name: 'Beto', address: 'b-home', capacity: 1 },
+      ],
+      [{ name: 'X', address: 'x' }],
+      'dest',
+      mapDistance,
+    );
+
+    // Old nearest-home greedy would pick Ana (5 < 8) for a total of 55 km;
+    // cheapest insertion picks Beto (detour 8+20-30=-2) for a total of 38.
+    expect(result.assignments).toEqual({ X: 'Beto' });
+    expect(result.totalDistanceMeters).toBe(10 + 8 + 20);
   });
 });
 
