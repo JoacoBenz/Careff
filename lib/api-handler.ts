@@ -3,8 +3,11 @@ import type { ZodType } from 'zod';
 import { auth } from './auth';
 import { logApiError } from './logger';
 
+// withAuth rejects requests without session.user, so handlers can rely on it.
+type AuthenticatedSession = Session & { user: NonNullable<Session['user']> };
+
 interface HandlerContext {
-  session: Session;
+  session: AuthenticatedSession;
 }
 
 type ApiHandler<TParams = unknown> = (
@@ -29,7 +32,7 @@ export function withAuth<TParams>(handler: ApiHandler<TParams>) {
       if (!session?.user) {
         return apiError('UNAUTHORIZED', 'Sesión expirada. Iniciá sesión nuevamente.', 401);
       }
-      return await handler(request, { session }, routeParams);
+      return await handler(request, { session: session as AuthenticatedSession }, routeParams);
     } catch (error) {
       const url = new URL(request.url);
       logApiError(url.pathname, request.method, error);

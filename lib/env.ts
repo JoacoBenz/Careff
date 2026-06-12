@@ -6,6 +6,8 @@ const envSchema = z.object({
   NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   SENTRY_DSN: z.string().optional(),
+  NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
+  OSRM_URL: z.string().url().default('https://router.project-osrm.org'),
 });
 
 function validateEnv() {
