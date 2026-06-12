@@ -36,7 +36,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   }));
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         <header className="flex items-center justify-between">

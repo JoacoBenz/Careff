@@ -6,6 +6,7 @@ import type { CarpoolPlanResult } from '@/lib/carpool';
 import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
 import { PlanResultView, CopyLinkButton } from './plan-result';
+import { RouteLoading } from './route-loading';
 
 export interface GroupMemberView {
   id: number;
@@ -155,6 +156,7 @@ export function GroupPlanner({
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      {loading && <RouteLoading />}
       <h2 className="font-semibold text-slate-900">Planificar el viaje del grupo</h2>
       <p className="mt-1 text-sm text-slate-500">
         {drivers.length} conductor{drivers.length === 1 ? '' : 'es'} ({totalSeats} asiento

@@ -38,10 +38,10 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <SiteHeader />
 
-      <section className="bg-gradient-to-b from-emerald-50 to-white px-4 pb-16 pt-20 text-center">
+      <section className="bg-gradient-to-b from-emerald-50/80 to-transparent px-4 pb-16 pt-20 text-center">
         <p className="mx-auto mb-4 w-fit rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-700">
           Gratis para siempre · Sin tarjeta de crédito
         </p>
@@ -82,7 +82,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 px-4 py-14">
+      <section className="bg-slate-50/70 px-4 py-14">
         <div className="mx-auto max-w-4xl">
           <h2 className="text-center text-2xl font-bold text-slate-900">
             Pensado para que lo uses (y lo vuelvas a usar)

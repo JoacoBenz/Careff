@@ -6,6 +6,7 @@ import type { CarpoolPlanResult } from '@/lib/carpool';
 import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
 import { PlanResultView } from './plan-result';
+import { RouteLoading } from './route-loading';
 
 interface DriverRow {
   name: string;
@@ -104,6 +105,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
 
   return (
     <div className="space-y-6">
+      {loading && <RouteLoading />}
       <form onSubmit={onSubmit} className="space-y-4">
         <SectionCard step="1" title="El viaje" hint="Un nombre para reconocerlo y dónde termina.">
           <div className="grid gap-3 sm:grid-cols-2">

@@ -1,1 +1,77 @@
 @import 'tailwindcss';
+
+/* Route-calculation loader: the route draws itself, dashes flow underneath,
+   nodes breathe, and each status message fades in. */
+@keyframes route-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.8);
+    opacity: 0.12;
+  }
+}
+
+@keyframes message-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.route-draw {
+  animation: route-draw 3.2s ease-in-out infinite;
+}
+
+.route-flow {
+  opacity: 0.35;
+  animation: route-flow 1.2s linear infinite;
+}
+
+.node-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: node-pulse 1.8s ease-in-out infinite;
+}
+
+.message-fade {
+  animation: message-fade 0.35s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-draw,
+  .route-flow,
+  .node-pulse,
+  .message-fade {
+    animation: none;
+  }
+}

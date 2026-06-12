@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { CityPulse } from '@/components/city-pulse';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body className="bg-slate-50">
+        <CityPulse />
+        {children}
+      </body>
     </html>
   );
 }

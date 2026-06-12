@@ -12,7 +12,7 @@ export default async function SharedPlanPage({ params }: { params: Promise<{ tok
   if (!plan) notFound();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
         <header className="mb-6">
