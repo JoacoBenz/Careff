@@ -30,7 +30,7 @@ export function apiError(code: string, message: string, status: number): Respons
  *
  *   export const GET = withAuth(async (request, { session }) => { ... });
  */
-export function withAuth<TParams>(handler: ApiHandler<TParams>) {
+export function withAuth<TParams = unknown>(handler: ApiHandler<TParams>) {
   return async (request: Request, routeParams?: TParams): Promise<Response> => {
     try {
       const session = await auth();
@@ -52,7 +52,7 @@ export function withAuth<TParams>(handler: ApiHandler<TParams>) {
  *
  *   export const POST = withOptionalAuth(async (request, { session }) => { ... });
  */
-export function withOptionalAuth<TParams>(
+export function withOptionalAuth<TParams = unknown>(
   handler: (request: Request, context: OptionalAuthContext, params?: TParams) => Promise<Response>,
 ) {
   return async (request: Request, routeParams?: TParams): Promise<Response> => {
@@ -77,14 +77,14 @@ export function withOptionalAuth<TParams>(
  *     withValidation(registerSchema, async (request, { session, data }) => { ... }),
  *   );
  */
-export function withValidation<TBody, TContext extends object = HandlerContext, TParams = unknown>(
+export function withValidation<TBody, TContext extends object = HandlerContext>(
   schema: ZodType<TBody>,
   handler: (
     request: Request,
     context: TContext & { data: TBody },
-    params?: TParams,
+    params?: unknown,
   ) => Promise<Response>,
-): (request: Request, context: TContext, params?: TParams) => Promise<Response> {
+): (request: Request, context: TContext, params?: unknown) => Promise<Response> {
   return async (request, context, params) => {
     let body: unknown;
     try {

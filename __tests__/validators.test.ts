@@ -1,5 +1,36 @@
 import { describe, it, expect } from 'vitest';
-import { registerSchema, paginationSchema, carpoolPlanSchema } from '@/lib/validators';
+import {
+  registerSchema,
+  paginationSchema,
+  carpoolPlanSchema,
+  joinGroupSchema,
+} from '@/lib/validators';
+
+describe('joinGroupSchema', () => {
+  const base = {
+    token: 'abc123def456',
+    name: 'Pia',
+    address: 'Av. Siempreviva 742',
+  };
+
+  it('accepts a passenger without a car (seats default 0)', () => {
+    const result = joinGroupSchema.parse({ ...base, hasCar: false });
+    expect(result.seats).toBe(0);
+  });
+
+  it('accepts a driver with seats and coerces strings', () => {
+    const result = joinGroupSchema.parse({ ...base, hasCar: true, seats: '4' });
+    expect(result.seats).toBe(4);
+  });
+
+  it('rejects a driver with zero seats', () => {
+    expect(joinGroupSchema.safeParse({ ...base, hasCar: true, seats: 0 }).success).toBe(false);
+  });
+
+  it('rejects seats above 8', () => {
+    expect(joinGroupSchema.safeParse({ ...base, hasCar: true, seats: 9 }).success).toBe(false);
+  });
+});
 
 const validPlan = {
   title: 'Cumple de Martina',

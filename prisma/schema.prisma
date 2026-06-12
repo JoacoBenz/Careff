@@ -15,8 +15,38 @@ model User {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   carpoolPlans CarpoolPlan[]
+  groups       Group[]
 
   @@map("users")
+}
+
+model Group {
+  id          Int           @id @default(autoincrement())
+  name        String
+  ownerId     Int           @map("owner_id")
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  inviteToken String        @unique @map("invite_token")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  members     GroupMember[]
+
+  @@index([ownerId])
+  @@map("groups")
+}
+
+// People join via the invite link without an account: each member declares
+// whether they bring a car and how many free seats it has.
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int      @map("group_id")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  address   String
+  hasCar    Boolean  @default(false) @map("has_car")
+  seats     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([groupId])
+  @@map("group_members")
 }
 
 model CarpoolPlan {

@@ -17,6 +17,9 @@ export async function SiteHeader() {
           </Link>
           {session?.user ? (
             <>
+              <Link href="/groups" className="text-slate-600 hover:text-slate-900">
+                Mis grupos
+              </Link>
               <Link href="/plans" className="text-slate-600 hover:text-slate-900">
                 Mis planes
               </Link>

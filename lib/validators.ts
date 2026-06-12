@@ -56,3 +56,22 @@ export type CarpoolPlanInput = z.infer<typeof carpoolPlanSchema>;
 export const geoSearchSchema = z.object({
   q: z.string().min(3).max(200),
 });
+
+export const createGroupSchema = z.object({
+  name: z.string().min(1).max(80),
+});
+
+export const joinGroupSchema = z
+  .object({
+    token: z.string().min(8).max(64),
+    name: personNameSchema,
+    address: addressSchema,
+    hasCar: z.boolean(),
+    seats: z.coerce.number().int().min(0).max(8).default(0),
+  })
+  .refine((data) => !data.hasCar || data.seats >= 1, {
+    message: 'Si tenés auto, indicá al menos 1 asiento libre',
+    path: ['seats'],
+  });
+
+export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
