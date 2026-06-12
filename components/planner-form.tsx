@@ -57,7 +57,6 @@ function SectionCard({
 
 export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
   const [title, setTitle] = useState('');
-  const [city, setCity] = useState('');
   const [destination, setDestination] = useState('');
   const [drivers, setDrivers] = useState<DriverRow[]>([{ name: '', address: '', capacity: '3' }]);
   const [passengers, setPassengers] = useState<PassengerRow[]>([{ name: '', address: '' }]);
@@ -90,7 +89,6 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title || `Viaje a ${destination}`,
-          city: city || undefined,
           destination,
           drivers: drivers.map((d) => ({ ...d, capacity: Number(d.capacity) })),
           passengers,
@@ -114,33 +112,22 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
       {loading && <RouteLoading />}
       <form onSubmit={onSubmit} className="space-y-4">
         <SectionCard step="1" title="El viaje" hint="Un nombre para reconocerlo y dónde termina.">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm text-slate-600">
-              Nombre del viaje (opcional)
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Cumple de Martina"
-                className={`mt-1 ${inputClass}`}
-              />
-            </label>
-            <label className="block text-sm text-slate-600">
-              Ciudad (se agrega a todas las direcciones)
-              <input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Buenos Aires, Argentina"
-                className={`mt-1 ${inputClass}`}
-              />
-            </label>
-          </div>
+          <label className="block text-sm text-slate-600">
+            Nombre del viaje (opcional)
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Cumple de Martina"
+              className={`mt-1 ${inputClass}`}
+            />
+          </label>
           <label className="mt-3 block text-sm text-slate-600">
             Destino final
             <div className="mt-1">
               <AddressInput
                 value={destination}
                 onChange={setDestination}
-                placeholder="Av. Corrientes 1234"
+                placeholder="Av. Corrientes 1234, Buenos Aires"
                 required
                 className={inputClass}
               />

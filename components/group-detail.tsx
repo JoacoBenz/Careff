@@ -114,7 +114,6 @@ export function GroupPlanner({
   members: GroupMemberView[];
 }) {
   const [destination, setDestination] = useState('');
-  const [city, setCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlanResponse | null>(null);
@@ -136,7 +135,6 @@ export function GroupPlanner({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `${groupName} — viaje`,
-          city: city || undefined,
           destination,
           drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
           passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
@@ -172,29 +170,18 @@ export function GroupPlanner({
         </p>
       )}
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm text-slate-600">
-            Destino final
-            <div className="mt-1">
-              <AddressInput
-                value={destination}
-                onChange={setDestination}
-                placeholder="Av. Corrientes 1234"
-                required
-                className={inputClass}
-              />
-            </div>
-          </label>
-          <label className="block text-sm text-slate-600">
-            Ciudad (opcional, se agrega a todas las direcciones)
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Buenos Aires, Argentina"
-              className={`mt-1 ${inputClass}`}
+        <label className="block text-sm text-slate-600">
+          Destino final
+          <div className="mt-1">
+            <AddressInput
+              value={destination}
+              onChange={setDestination}
+              placeholder="Av. Corrientes 1234, Buenos Aires"
+              required
+              className={inputClass}
             />
-          </label>
-        </div>
+          </div>
+        </label>
         {error && (
           <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
             {error}
