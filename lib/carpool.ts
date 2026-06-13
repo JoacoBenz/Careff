@@ -3,10 +3,10 @@
  * DistanceFn so the algorithm is testable without network access (see
  * lib/geo.ts for the real provider).
  *
- * Algorithm (ported from the original MartinaAutos Python app): greedy
- * nearest-driver assignment — each passenger is assigned to the closest driver
- * with remaining seats, then each driver's pickups are ordered nearest-first
- * starting from the driver's address.
+ * Algorithm: global cheapest-insertion (see planCarpool). Each round, the
+ * passenger/driver/route-position with the smallest added distance across ALL
+ * cars is committed, so the whole set of trips stays efficient with several
+ * drivers — not just "nearest driver to each passenger's home".
  */
 
 export interface DriverInput {
