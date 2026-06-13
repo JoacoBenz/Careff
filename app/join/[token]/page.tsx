@@ -46,7 +46,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
       <main className="mx-auto max-w-md px-4 py-10">
         <header className="mb-6 text-center">
           <span className="flex justify-center">
-            <Logo withWordmark={false} />
+            <Logo />
           </span>
           <h1 className="mt-2 text-2xl font-bold text-white">
             {group.owner.name} te invitó a «{group.name}»
