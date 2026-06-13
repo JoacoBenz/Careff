@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 import type { ApiErrorBody } from '@/types';
 
 export default function RegisterPage() {
@@ -42,7 +43,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+      <Link href="/" aria-label="Inicio">
+        <Logo />
+      </Link>
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow"
