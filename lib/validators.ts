@@ -49,6 +49,9 @@ export const carpoolPlanSchema = z.object({
     )
     .min(1)
     .max(30),
+  // Coordinates already resolved by autocomplete, keyed by the exact address
+  // string. Addresses present here skip server-side geocoding (exact + fast).
+  coords: z.record(z.string(), z.object({ lat: z.number(), lon: z.number() })).optional(),
 });
 
 export type CarpoolPlanInput = z.infer<typeof carpoolPlanSchema>;

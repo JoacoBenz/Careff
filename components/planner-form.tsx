@@ -12,12 +12,18 @@ interface DriverRow {
   name: string;
   address: string;
   capacity: string;
+  lat?: number;
+  lon?: number;
 }
 
 interface PassengerRow {
   name: string;
   address: string;
+  lat?: number;
+  lon?: number;
 }
+
+type Coords = { lat: number; lon: number };
 
 interface PlanResponse {
   plan: CarpoolPlanResult;
@@ -62,6 +68,7 @@ function SectionCard({
 export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
+  const [destinationCoords, setDestinationCoords] = useState<Coords | undefined>();
   const [drivers, setDrivers] = useState<DriverRow[]>([{ name: '', address: '', capacity: '3' }]);
   const [passengers, setPassengers] = useState<PassengerRow[]>([{ name: '', address: '' }]);
   const [loading, setLoading] = useState(false);
@@ -88,14 +95,27 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
     setError(null);
     setResult(null);
     try {
+      // Coordinates captured when a suggestion was picked, keyed by address.
+      const coords: Record<string, Coords> = {};
+      for (const d of drivers)
+        if (d.lat != null && d.lon != null) coords[d.address] = { lat: d.lat, lon: d.lon };
+      for (const p of passengers)
+        if (p.lat != null && p.lon != null) coords[p.address] = { lat: p.lat, lon: p.lon };
+      if (destinationCoords) coords[destination] = destinationCoords;
+
       const response = await fetch('/api/carpool', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title || `Viaje a ${destination}`,
           destination,
-          drivers: drivers.map((d) => ({ ...d, capacity: Number(d.capacity) })),
-          passengers,
+          drivers: drivers.map((d) => ({
+            name: d.name,
+            address: d.address,
+            capacity: Number(d.capacity),
+          })),
+          passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
+          coords: Object.keys(coords).length > 0 ? coords : undefined,
         }),
       });
       const body: unknown = await response.json();
@@ -130,7 +150,10 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
             <div className="mt-1">
               <AddressInput
                 value={destination}
-                onChange={setDestination}
+                onChange={(v, c) => {
+                  setDestination(v);
+                  setDestinationCoords(c);
+                }}
                 placeholder="Av. Corrientes 1234, Buenos Aires"
                 required
                 className={inputClass}
@@ -182,7 +205,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                 <div className="order-4 w-full sm:order-2 sm:w-auto sm:flex-1">
                   <AddressInput
                     value={driver.address}
-                    onChange={(v) => updateDriver(i, { address: v })}
+                    onChange={(v, c) => updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon })}
                     placeholder="Dirección"
                     required
                     className={inputClass}
@@ -233,7 +256,9 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                 <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
                   <AddressInput
                     value={passenger.address}
-                    onChange={(v) => updatePassenger(i, { address: v })}
+                    onChange={(v, c) =>
+                      updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon })
+                    }
                     placeholder="Dirección"
                     required
                     className={inputClass}

@@ -114,6 +114,9 @@ export function GroupPlanner({
   members: GroupMemberView[];
 }) {
   const [destination, setDestination] = useState('');
+  const [destinationCoords, setDestinationCoords] = useState<
+    { lat: number; lon: number } | undefined
+  >();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlanResponse | null>(null);
@@ -138,6 +141,7 @@ export function GroupPlanner({
           destination,
           drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
           passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
+          coords: destinationCoords ? { [destination]: destinationCoords } : undefined,
         }),
       });
       const body: unknown = await response.json();
@@ -175,7 +179,10 @@ export function GroupPlanner({
           <div className="mt-1">
             <AddressInput
               value={destination}
-              onChange={setDestination}
+              onChange={(v, c) => {
+                setDestination(v);
+                setDestinationCoords(c);
+              }}
               placeholder="Av. Corrientes 1234, Buenos Aires"
               required
               className={inputClass}

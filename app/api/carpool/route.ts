@@ -36,13 +36,20 @@ export const POST = withOptionalAuth(
         return apiError('CAPACITY_EXCEEDED', `${pax} pero ${seats}.`, 422);
       }
 
+      // Coordinates resolved by autocomplete skip geocoding (exact + fast).
+      const hints = new Map<string, { lat: number; lon: number }>();
+      if (data.coords) {
+        for (const [address, c] of Object.entries(data.coords)) {
+          hints.set(withCity(address, data.city), c);
+        }
+      }
+
       let distance;
       try {
-        distance = await buildDistanceFn([
-          ...drivers.map((d) => d.address),
-          ...passengers.map((p) => p.address),
-          destination,
-        ]);
+        distance = await buildDistanceFn(
+          [...drivers.map((d) => d.address), ...passengers.map((p) => p.address), destination],
+          hints,
+        );
       } catch (error) {
         if (error instanceof AddressNotFoundError) {
           return apiError(

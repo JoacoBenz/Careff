@@ -5,7 +5,9 @@ import type { AddressSuggestion } from '@/lib/geo';
 
 interface AddressInputProps {
   value: string;
-  onChange: (value: string) => void;
+  // coords are provided only when the value comes from picking a suggestion;
+  // typing emits no coords so the parent clears any stale pin.
+  onChange: (value: string, coords?: { lat: number; lon: number }) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
@@ -14,7 +16,8 @@ interface AddressInputProps {
 /**
  * Address field with debounced autocomplete backed by /api/geo/search.
  * Selecting a suggestion replaces the text with the geocoder's canonical
- * address, which guarantees the plan request will geocode.
+ * address and passes its exact coordinates up, so the plan request skips
+ * re-geocoding that address.
  */
 export function AddressInput({
   value,
@@ -82,7 +85,7 @@ export function AddressInput({
               <button
                 type="button"
                 onMouseDown={() => {
-                  onChange(s.label);
+                  onChange(s.label, { lat: s.lat, lon: s.lon });
                   setOpen(false);
                 }}
                 className="block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50"
