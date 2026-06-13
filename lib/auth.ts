@@ -9,6 +9,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Required for self-hosted production (`next start`, Docker): Auth.js only
   // auto-trusts the request host on Vercel or in dev.
   trustHost: true,
+  // A session cookie that can't be decrypted (stale, or signed with a previous
+  // NEXTAUTH_SECRET) is benign — Auth.js just treats the request as logged out.
+  // Don't spam the logs with it; surface every other auth error normally.
+  logger: {
+    error(error: Error) {
+      if (error.name === 'JWTSessionError') return;
+      console.error(error);
+    },
+  },
   // App-specific cookie name: stale `authjs.session-token` cookies left on
   // localhost by other projects otherwise fail decryption and spam
   // JWTSessionError on every request.
