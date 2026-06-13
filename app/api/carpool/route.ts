@@ -49,6 +49,7 @@ export const POST = withOptionalAuth(
         distance = await buildDistanceFn(
           [...drivers.map((d) => d.address), ...passengers.map((p) => p.address), destination],
           hints,
+          { country: data.country, provincia: data.provincia },
         );
       } catch (error) {
         if (error instanceof AddressNotFoundError) {

@@ -7,6 +7,8 @@ import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
 import { PlanResultView, CopyLinkButton } from './plan-result';
 import { RouteLoading } from './route-loading';
+import { RegionSelect } from './region-select';
+import { useRegion } from './use-region';
 
 export interface GroupMemberView {
   id: number;
@@ -113,6 +115,7 @@ export function GroupPlanner({
   groupName: string;
   members: GroupMemberView[];
 }) {
+  const [region, setRegion] = useRegion();
   const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<
     { lat: number; lon: number } | undefined
@@ -142,6 +145,8 @@ export function GroupPlanner({
           drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
           passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
           coords: destinationCoords ? { [destination]: destinationCoords } : undefined,
+          country: region.country,
+          provincia: region.provincia,
         }),
       });
       const body: unknown = await response.json();
@@ -174,6 +179,12 @@ export function GroupPlanner({
         </p>
       )}
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
+        <div className="text-sm text-slate-600">
+          Región (mejora la precisión de las direcciones)
+          <div className="mt-1">
+            <RegionSelect value={region} onChange={setRegion} />
+          </div>
+        </div>
         <label className="block text-sm text-slate-600">
           Destino final
           <div className="mt-1">
@@ -183,6 +194,7 @@ export function GroupPlanner({
                 setDestination(v);
                 setDestinationCoords(c);
               }}
+              region={{ country: region.country, provincia: region.provincia }}
               placeholder="Av. Corrientes 1234, Buenos Aires"
               required
               className={inputClass}

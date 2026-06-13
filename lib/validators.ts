@@ -52,13 +52,28 @@ export const carpoolPlanSchema = z.object({
   // Coordinates already resolved by autocomplete, keyed by the exact address
   // string. Addresses present here skip server-side geocoding (exact + fast).
   coords: z.record(z.string(), z.object({ lat: z.number(), lon: z.number() })).optional(),
+  // Region for any address that still needs geocoding: country (ISO alpha-2)
+  // scopes Nominatim; province (Georef id) kills same-named streets elsewhere.
+  country: z.string().max(2).optional(),
+  provincia: z.string().max(40).optional(),
 });
 
 export type CarpoolPlanInput = z.infer<typeof carpoolPlanSchema>;
 
 export const geoSearchSchema = z.object({
   q: z.string().min(3).max(200),
+  country: z.string().max(2).optional(),
+  prov: z.string().max(40).optional(),
 });
+
+// Region defaults a registered user can save to their profile.
+export const profileRegionSchema = z.object({
+  country: z.string().max(2).optional(),
+  provinceId: z.string().max(40).optional(),
+  provinceName: z.string().max(80).optional(),
+});
+
+export type ProfileRegionInput = z.infer<typeof profileRegionSchema>;
 
 export const createGroupSchema = z.object({
   name: z.string().min(1).max(80),

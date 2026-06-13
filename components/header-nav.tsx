@@ -43,6 +43,7 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
           <>
             <NavPill href="/groups">Mis grupos</NavPill>
             <NavPill href="/plans">Mis planes</NavPill>
+            <NavPill href="/profile">Mi perfil</NavPill>
             <LogoutButton />
           </>
         ) : (
@@ -75,6 +76,7 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
               <>
                 {mobileLink('/groups', 'Mis grupos')}
                 {mobileLink('/plans', 'Mis planes')}
+                {mobileLink('/profile', 'Mi perfil')}
                 <button
                   type="button"
                   onClick={() => {

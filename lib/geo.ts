@@ -46,6 +46,17 @@ export interface AddressSuggestion {
   lon: number;
 }
 
+export interface Province {
+  id: string;
+  nombre: string;
+}
+
+/** Region constraint for geocoding. country is an ISO-3166 alpha-2 code. */
+export interface Region {
+  country?: string;
+  provincia?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Georef (primary)
 // ---------------------------------------------------------------------------
@@ -55,8 +66,13 @@ interface GeorefDireccion {
   ubicacion?: { lat: number | null; lon: number | null };
 }
 
-async function georefSearch(query: string, max: number): Promise<AddressSuggestion[]> {
-  const url = `${GEOREF_URL}/direcciones?direccion=${encodeURIComponent(query)}&max=${max}&campos=estandar`;
+async function georefSearch(
+  query: string,
+  max: number,
+  provincia?: string,
+): Promise<AddressSuggestion[]> {
+  const prov = provincia ? `&provincia=${encodeURIComponent(provincia)}` : '';
+  const url = `${GEOREF_URL}/direcciones?direccion=${encodeURIComponent(query)}&max=${max}${prov}&campos=estandar`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new GeoProviderError(`Georef responded with status ${response.status}`);
@@ -73,12 +89,41 @@ async function georefSearch(query: string, max: number): Promise<AddressSuggesti
   return suggestions;
 }
 
+/** Province of a coordinate (used to auto-default the region from geolocation). */
+export async function reverseProvince(lat: number, lon: number): Promise<Province | null> {
+  const url = `${GEOREF_URL}/ubicacion?lat=${lat}&lon=${lon}&campos=estandar`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  const data = (await response.json()) as {
+    ubicacion?: { provincia?: { id?: string; nombre?: string } };
+  };
+  const p = data.ubicacion?.provincia;
+  return p?.id && p?.nombre ? { id: p.id, nombre: p.nombre } : null;
+}
+
+/** All Argentine provinces, for the manual region selector. */
+export async function listProvinces(): Promise<Province[]> {
+  const url = `${GEOREF_URL}/provincias?campos=id,nombre&max=30`;
+  const response = await fetch(url);
+  if (!response.ok) throw new GeoProviderError(`Georef responded with status ${response.status}`);
+  const data = (await response.json()) as { provincias?: { id: string; nombre: string }[] };
+  return (data.provincias ?? [])
+    .map((p) => ({ id: p.id, nombre: p.nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+
 // ---------------------------------------------------------------------------
 // Nominatim (fallback)
 // ---------------------------------------------------------------------------
 
-async function nominatimSearch(query: string, limit: number): Promise<AddressSuggestion[]> {
-  const url = `${NOMINATIM_URL}/search?format=json&limit=${limit}&q=${encodeURIComponent(query)}`;
+async function nominatimSearch(
+  query: string,
+  limit: number,
+  country = 'ar',
+): Promise<AddressSuggestion[]> {
+  // countrycodes keeps the fallback within the selected country.
+  const cc = encodeURIComponent(country.toLowerCase());
+  const url = `${NOMINATIM_URL}/search?format=json&countrycodes=${cc}&limit=${limit}&q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
   if (!response.ok) {
     throw new GeoProviderError(`Geocoder responded with status ${response.status}`);
@@ -102,51 +147,79 @@ async function nominatimSearch(query: string, limit: number): Promise<AddressSug
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Autocomplete suggestions: Georef first, Nominatim if Georef has nothing. */
-export async function searchAddresses(query: string): Promise<AddressSuggestion[]> {
-  const ar = await georefSearch(query, 5).catch(() => [] as AddressSuggestion[]);
-  if (ar.length > 0) return ar;
-  return nominatimSearch(query, 5);
+// Georef only covers Argentina, so it's used when the country is AR (the
+// default); other countries go straight to Nominatim scoped to that country.
+function isArgentina(region?: Region): boolean {
+  const c = region?.country?.toLowerCase();
+  return !c || c === 'ar';
+}
+
+/**
+ * Autocomplete suggestions. In Argentina: Georef (constrained to the province,
+ * which removes same-named streets elsewhere) first, then Nominatim(AR). In
+ * other countries: Nominatim scoped to that country.
+ */
+export async function searchAddresses(
+  query: string,
+  region?: Region,
+): Promise<AddressSuggestion[]> {
+  const country = region?.country?.toLowerCase() || 'ar';
+  if (isArgentina(region)) {
+    const ar = await georefSearch(query, 5, region?.provincia).catch(
+      () => [] as AddressSuggestion[],
+    );
+    if (ar.length > 0) return ar;
+  }
+  return nominatimSearch(query, 5, country);
 }
 
 // Process-wide cache: repeated plans usually share addresses, and caching keeps
-// us polite with the public geocoders.
+// us polite with the public geocoders. Keyed by region + address.
 const geocodeCache = new Map<string, Coordinates>();
 
-async function geocode(address: string): Promise<Coordinates> {
-  const cached = geocodeCache.get(address);
+async function geocode(address: string, region?: Region): Promise<Coordinates> {
+  const country = region?.country?.toLowerCase() || 'ar';
+  const cacheKey = `${country}|${region?.provincia ?? ''}|${address}`;
+  const cached = geocodeCache.get(cacheKey);
   if (cached) return cached;
 
-  // Georef (Argentina, precise) first.
-  const ar = await georefSearch(address, 1).catch(() => [] as AddressSuggestion[]);
-  let coords: Coordinates | null = ar.length > 0 ? { lat: ar[0].lat, lon: ar[0].lon } : null;
+  let coords: Coordinates | null = null;
 
-  // Fallback to Nominatim for POIs / outside Argentina.
+  // Georef (Argentina, precise, province-constrained) first.
+  if (isArgentina(region)) {
+    const ar = await georefSearch(address, 1, region?.provincia).catch(
+      () => [] as AddressSuggestion[],
+    );
+    if (ar.length > 0) coords = { lat: ar[0].lat, lon: ar[0].lon };
+  }
+
+  // Fallback to Nominatim, scoped to the country.
   if (!coords) {
-    const osm = await nominatimSearch(address, 1).catch(() => [] as AddressSuggestion[]);
+    const osm = await nominatimSearch(address, 1, country).catch(() => [] as AddressSuggestion[]);
     if (osm.length > 0) coords = { lat: osm[0].lat, lon: osm[0].lon };
   }
 
   if (!coords) throw new AddressNotFoundError(address);
-  geocodeCache.set(address, coords);
+  geocodeCache.set(cacheKey, coords);
   return coords;
 }
 
 /**
  * Geocodes every unique address and fetches a full driving-distance matrix in
  * a single OSRM table call. `hints` supplies coordinates already known from the
- * autocomplete pick, so those addresses skip geocoding entirely (faster and
- * exact — no re-geocoding drift).
+ * autocomplete pick (skip geocoding — faster and exact). `region` constrains
+ * any address that still needs geocoding to the trip's country / province.
  */
 export async function buildDistanceFn(
   addresses: string[],
   hints?: Map<string, Coordinates>,
+  region?: Region,
 ): Promise<DistanceFn> {
   const unique = [...new Set(addresses)];
   const coords: Coordinates[] = [];
   for (const address of unique) {
     const hint = hints?.get(address);
-    coords.push(hint ?? (await geocode(address)));
+    coords.push(hint ?? (await geocode(address, region)));
   }
 
   const pairs = coords.map((c) => `${c.lon},${c.lat}`).join(';');

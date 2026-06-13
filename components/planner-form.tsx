@@ -7,6 +7,8 @@ import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
 import { PlanResultView } from './plan-result';
 import { RouteLoading } from './route-loading';
+import { RegionSelect, type RegionValue } from './region-select';
+import { useRegion } from './use-region';
 
 interface DriverRow {
   name: string;
@@ -65,7 +67,14 @@ function SectionCard({
   );
 }
 
-export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
+export function PlannerForm({
+  loggedIn,
+  initialRegion,
+}: {
+  loggedIn: boolean;
+  initialRegion?: RegionValue;
+}) {
+  const [region, setRegion] = useRegion(initialRegion);
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<Coords | undefined>();
@@ -116,6 +125,8 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
           })),
           passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
           coords: Object.keys(coords).length > 0 ? coords : undefined,
+          country: region.country,
+          provincia: region.provincia,
         }),
       });
       const body: unknown = await response.json();
@@ -145,6 +156,12 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
               className={`mt-1 ${inputClass}`}
             />
           </label>
+          <div className="mt-3 text-sm text-slate-600">
+            Región (mejora la precisión de las direcciones)
+            <div className="mt-1">
+              <RegionSelect value={region} onChange={setRegion} />
+            </div>
+          </div>
           <label className="mt-3 block text-sm text-slate-600">
             Destino final
             <div className="mt-1">
@@ -154,6 +171,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                   setDestination(v);
                   setDestinationCoords(c);
                 }}
+                region={{ country: region.country, provincia: region.provincia }}
                 placeholder="Av. Corrientes 1234, Buenos Aires"
                 required
                 className={inputClass}
@@ -206,6 +224,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                   <AddressInput
                     value={driver.address}
                     onChange={(v, c) => updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon })}
+                    region={{ country: region.country, provincia: region.provincia }}
                     placeholder="Dirección"
                     required
                     className={inputClass}
@@ -259,6 +278,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                     onChange={(v, c) =>
                       updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon })
                     }
+                    region={{ country: region.country, provincia: region.provincia }}
                     placeholder="Dirección"
                     required
                     className={inputClass}

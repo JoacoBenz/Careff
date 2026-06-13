@@ -15,6 +15,10 @@ model User {
   // Set the first time the user declares a departure address; used to
   // prefill address fields from then on.
   defaultAddress String?     @map("default_address")
+  // Saved region defaults (profile) — seed the planner's address autocomplete.
+  defaultCountry      String? @map("default_country")
+  defaultProvinceId   String? @map("default_province_id")
+  defaultProvinceName String? @map("default_province_name")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   carpoolPlans CarpoolPlan[]
