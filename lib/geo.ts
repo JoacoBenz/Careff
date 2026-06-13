@@ -1,5 +1,6 @@
 import { env } from './env';
 import type { DistanceFn } from './carpool';
+import { prettyLabel } from './address-format';
 
 /**
  * Geocoding + driving distances, all on free services (no API key, no cost):
@@ -83,7 +84,7 @@ async function georefSearch(
     const lat = d.ubicacion?.lat;
     const lon = d.ubicacion?.lon;
     if (typeof lat === 'number' && typeof lon === 'number' && d.nomenclatura) {
-      suggestions.push({ label: d.nomenclatura, lat, lon });
+      suggestions.push({ label: prettyLabel(d.nomenclatura), lat, lon });
     }
   }
   return suggestions;
