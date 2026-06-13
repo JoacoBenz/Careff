@@ -25,8 +25,12 @@ interface PlanResponse {
   shareToken?: string;
 }
 
-const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+// Field base WITHOUT a width, so width utilities (w-16/w-20) added per-field
+// don't collide with w-full (Tailwind resolves conflicts by compiled order,
+// not class-string order). inputClass is the full-width default.
+const fieldBase =
+  'rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+const inputClass = `${fieldBase} w-full`;
 
 function SectionCard({
   step,
@@ -142,20 +146,18 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
         >
           <div className="space-y-2">
             {drivers.map((driver, i) => (
-              <div key={i} className="flex gap-2">
+              // Mobile: name + seats + remove on one line, address full-width
+              // below. Desktop (sm): everything inline via order utilities.
+              <div
+                key={i}
+                className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
+              >
                 <input
                   value={driver.name}
                   onChange={(e) => updateDriver(i, { name: e.target.value })}
                   placeholder="Nombre"
                   required
-                  className={`${inputClass} max-w-36`}
-                />
-                <AddressInput
-                  value={driver.address}
-                  onChange={(v) => updateDriver(i, { address: v })}
-                  placeholder="Dirección"
-                  required
-                  className={inputClass}
+                  className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
                 />
                 <input
                   type="number"
@@ -164,7 +166,7 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                   value={driver.capacity}
                   onChange={(e) => updateDriver(i, { capacity: e.target.value })}
                   required
-                  className={`${inputClass} w-20`}
+                  className={`${fieldBase} order-2 w-16 sm:order-3 sm:w-20`}
                   title="Asientos libres"
                   aria-label="Asientos libres"
                 />
@@ -172,11 +174,20 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
                   type="button"
                   onClick={() => setDrivers((rows) => rows.filter((_, j) => j !== i))}
                   disabled={drivers.length === 1}
-                  className="rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+                  className="order-3 rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40 sm:order-4"
                   aria-label="Quitar conductor"
                 >
                   ✕
                 </button>
+                <div className="order-4 w-full sm:order-2 sm:w-auto sm:flex-1">
+                  <AddressInput
+                    value={driver.address}
+                    onChange={(v) => updateDriver(i, { address: v })}
+                    placeholder="Dirección"
+                    required
+                    className={inputClass}
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -199,30 +210,35 @@ export function PlannerForm({ loggedIn }: { loggedIn: boolean }) {
         >
           <div className="space-y-2">
             {passengers.map((passenger, i) => (
-              <div key={i} className="flex gap-2">
+              <div
+                key={i}
+                className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
+              >
                 <input
                   value={passenger.name}
                   onChange={(e) => updatePassenger(i, { name: e.target.value })}
                   placeholder="Nombre"
                   required
-                  className={`${inputClass} max-w-36`}
-                />
-                <AddressInput
-                  value={passenger.address}
-                  onChange={(v) => updatePassenger(i, { address: v })}
-                  placeholder="Dirección"
-                  required
-                  className={inputClass}
+                  className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
                 />
                 <button
                   type="button"
                   onClick={() => setPassengers((rows) => rows.filter((_, j) => j !== i))}
                   disabled={passengers.length === 1}
-                  className="rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+                  className="order-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40 sm:order-3"
                   aria-label="Quitar pasajero"
                 >
                   ✕
                 </button>
+                <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
+                  <AddressInput
+                    value={passenger.address}
+                    onChange={(v) => updatePassenger(i, { address: v })}
+                    placeholder="Dirección"
+                    required
+                    className={inputClass}
+                  />
+                </div>
               </div>
             ))}
           </div>
