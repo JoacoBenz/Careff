@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CarpoolPlanResult, DriverRoute } from '@/lib/carpool';
+import { computeExpense, formatMoney } from '@/lib/expenses';
 
 const km = (meters: number) => `${(meters / 1000).toFixed(1)} km`;
 
-function whatsappUrl(route: DriverRoute, title: string): string {
+// Editable fallback when the Energía price feed is unavailable. Prices move
+// with inflation, so this is just a starting point the user adjusts.
+const DEFAULT_PRICE = '1200';
+const DEFAULT_CONSUMO = '10';
+
+function whatsappUrl(route: DriverRoute, title: string, perPassenger: number): string {
   const lines = [`🚗 *${title}*`, '', `${route.driver}, esta es tu ruta:`];
   route.stops.forEach((stop, i) => lines.push(`${i + 1}. Buscar a ${stop.name} — ${stop.address}`));
   lines.push(
     `🏁 Destino: ${route.addresses[route.addresses.length - 1]}`,
     `📏 ${km(route.distanceMeters)} en total`,
+  );
+  if (perPassenger > 0) lines.push(`💸 Cada pasajero pone ${formatMoney(perPassenger)}`);
+  lines.push(
     '',
     `🗺️ Ruta en el mapa: ${route.mapUrl}`,
     '',
@@ -43,16 +52,47 @@ const accents = [
   'border-l-rose-500',
 ];
 
+const numInput =
+  'w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+
 export function PlanResultView({
   plan,
   title,
   shareUrl,
+  regionName,
 }: {
   plan: CarpoolPlanResult;
   title: string;
   shareUrl?: string;
+  regionName?: string;
 }) {
   const passengerCount = Object.keys(plan.assignments).length;
+
+  // Trip-wide expense inputs (fuel price + consumption + who pays).
+  const [price, setPrice] = useState(DEFAULT_PRICE);
+  const [consumo, setConsumo] = useState(DEFAULT_CONSUMO);
+  const [driverPays, setDriverPays] = useState(true);
+  const [priceNote, setPriceNote] = useState<string | null>(null);
+  const [priceTouched, setPriceTouched] = useState(false);
+  // Per-car tolls/extras, keyed by route index.
+  const [extras, setExtras] = useState<Record<number, string>>({});
+
+  // Pre-fill the fuel price from the Energía open dataset (best-effort).
+  useEffect(() => {
+    const params = regionName ? `?prov=${encodeURIComponent(regionName)}` : '';
+    fetch(`/api/fuel-price${params}`)
+      .then((r) => r.json())
+      .then((d: { price: number | null; asOf?: string }) => {
+        if (priceTouched || typeof d.price !== 'number') return;
+        setPrice(String(d.price));
+        setPriceNote(
+          d.asOf ? `precio sugerido (Energía, ${d.asOf.slice(0, 10)})` : 'precio sugerido',
+        );
+      })
+      .catch(() => {});
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -79,59 +119,145 @@ export function PlanResultView({
         </p>
       )}
 
+      {/* Trip expense controls */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Gastos del viaje (opcional)</h3>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Estimamos la nafta con la distancia de cada auto. Sumá peajes y dividimos entre los que
+          viajan.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-3">
+          <label className="text-xs text-slate-600">
+            Precio nafta ($/L)
+            <input
+              type="number"
+              min={0}
+              value={price}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                setPriceTouched(true);
+                setPriceNote(null);
+              }}
+              className={`mt-1 block ${numInput}`}
+            />
+            {priceNote && (
+              <span className="mt-0.5 block text-[11px] text-emerald-700">💡 {priceNote}</span>
+            )}
+          </label>
+          <label className="text-xs text-slate-600">
+            Consumo (L/100km)
+            <input
+              type="number"
+              min={0}
+              value={consumo}
+              onChange={(e) => setConsumo(e.target.value)}
+              className={`mt-1 block ${numInput}`}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={driverPays}
+              onChange={(e) => setDriverPays(e.target.checked)}
+              className="accent-emerald-600"
+            />
+            El conductor también pone su parte
+          </label>
+        </div>
+      </div>
+
       <ul className="space-y-3">
-        {plan.routes.map((route, i) => (
-          <li
-            key={route.driver}
-            className={`rounded-xl border border-slate-200 border-l-4 bg-white p-4 shadow-sm ${accents[i % accents.length]}`}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">🚗 {route.driver}</h3>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                {km(route.distanceMeters)}
-              </span>
-            </div>
-            <ol className="mt-3 space-y-1.5 text-sm text-slate-700">
-              {route.stops.map((stop, n) => (
-                <li key={stop.name} className="flex gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
-                    {n + 1}
+        {plan.routes.map((route, i) => {
+          const expense = computeExpense({
+            distanceMeters: route.distanceMeters,
+            litersPer100km: Number(consumo) || 0,
+            pricePerLiter: Number(price) || 0,
+            extras: Number(extras[i]) || 0,
+            passengers: route.stops.length,
+            driverPays,
+          });
+          return (
+            <li
+              key={route.driver}
+              className={`rounded-xl border border-slate-200 border-l-4 bg-white p-4 shadow-sm ${accents[i % accents.length]}`}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-slate-900">🚗 {route.driver}</h3>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                  {km(route.distanceMeters)}
+                </span>
+              </div>
+              <ol className="mt-3 space-y-1.5 text-sm text-slate-700">
+                {route.stops.map((stop, n) => (
+                  <li key={stop.name} className="flex gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                      {n + 1}
+                    </span>
+                    <span>
+                      Buscar a <strong>{stop.name}</strong>
+                      <span className="text-slate-400"> · {stop.address}</span>
+                    </span>
+                  </li>
+                ))}
+                <li className="flex gap-2">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs">
+                    🏁
                   </span>
-                  <span>
-                    Buscar a <strong>{stop.name}</strong>
-                    <span className="text-slate-400"> · {stop.address}</span>
+                  <span className="text-slate-500">
+                    {route.addresses[route.addresses.length - 1]}
                   </span>
                 </li>
-              ))}
-              <li className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs">
-                  🏁
-                </span>
-                <span className="text-slate-500">
-                  {route.addresses[route.addresses.length - 1]}
-                </span>
-              </li>
-            </ol>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <a
-                href={whatsappUrl(route, title)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
-              >
-                Enviar por WhatsApp
-              </a>
-              <a
-                href={route.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                🗺️ Ver en Google Maps
-              </a>
-            </div>
-          </li>
-        ))}
+              </ol>
+
+              {/* Per-car costs */}
+              <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-slate-600">
+                    Nafta {formatMoney(expense.fuel)}
+                    <span className="text-slate-400"> + peajes </span>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={extras[i] ?? ''}
+                      onChange={(e) => setExtras((prev) => ({ ...prev, [i]: e.target.value }))}
+                      className="w-20 rounded border border-slate-300 px-2 py-0.5 text-sm focus:border-emerald-500 focus:outline-none"
+                      aria-label={`Peajes y extras de ${route.driver}`}
+                    />
+                  </span>
+                  <span className="font-medium text-slate-700">
+                    Total {formatMoney(expense.total)}
+                  </span>
+                </div>
+                {route.stops.length > 0 && expense.perPassenger > 0 && (
+                  <p className="mt-2 font-medium text-emerald-700">
+                    Cada pasajero le pone {formatMoney(expense.perPassenger)} a {route.driver}
+                    {driverPays ? '' : ' (el conductor no paga)'}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a
+                  href={whatsappUrl(route, title, expense.perPassenger)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+                >
+                  Enviar por WhatsApp
+                </a>
+                <a
+                  href={route.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  🗺️ Ver en Google Maps
+                </a>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {shareUrl && (

@@ -221,6 +221,7 @@ export function GroupPlanner({
           <PlanResultView
             plan={result.plan}
             title={`${groupName} — viaje`}
+            regionName={region.provinceName}
             shareUrl={
               result.shareToken && typeof window !== 'undefined'
                 ? `${window.location.origin}/p/${result.shareToken}`

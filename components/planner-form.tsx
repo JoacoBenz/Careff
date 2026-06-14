@@ -339,6 +339,7 @@ export function PlannerForm({
           <PlanResultView
             plan={result.plan}
             title={title || `Viaje a ${destination}`}
+            regionName={region.provinceName}
             shareUrl={
               result.shareToken && loggedIn && typeof window !== 'undefined'
                 ? `${window.location.origin}/p/${result.shareToken}`

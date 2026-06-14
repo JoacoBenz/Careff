@@ -11,6 +11,11 @@ const envSchema = z.object({
   // Argentine government geocoder (free, no key). Primary for AR addresses;
   // Nominatim is the fallback for POIs / addresses outside Argentina.
   GEOREF_URL: z.string().url().default('https://apis.datos.gob.ar/georef/api'),
+  // Secretaría de Energía open data (free, no key) for suggesting fuel prices.
+  // The resource id changes when the dataset is republished — override it via
+  // env to keep the auto-suggest working without a code change.
+  ENERGIA_API_URL: z.string().url().default('https://datos.energia.gob.ar/api/3/action'),
+  ENERGIA_FUEL_RESOURCE: z.string().default('80ac25de-a44a-4445-9215-090cf55cfda5'),
 });
 
 function validateEnv() {
