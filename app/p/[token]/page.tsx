@@ -21,7 +21,11 @@ export default async function SharedPlanPage({ params }: { params: Promise<{ tok
             🏁 {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
           </p>
         </header>
-        <PlanResultView plan={plan.result as unknown as CarpoolPlanResult} title={plan.title} />
+        <PlanResultView
+          plan={plan.result as unknown as CarpoolPlanResult}
+          title={plan.title}
+          showExpenses={false}
+        />
         <p className="mt-8 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
           ¿Tenés que organizar un viaje así?{' '}
           <Link href="/planner" className="link-sweep font-medium text-emerald-700">
