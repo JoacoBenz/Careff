@@ -1,5 +1,3 @@
-import { apiError } from './api-handler';
-
 /**
  * Minimal in-memory fixed-window rate limiter for public/expensive endpoints.
  *
@@ -69,13 +67,17 @@ export function enforceRateLimit(
 ): Response | null {
   const result = rateLimit(`${name}:${clientIp(request)}`, opts);
   if (result.ok) return null;
-  const response = apiError(
-    'RATE_LIMITED',
-    'Demasiadas solicitudes. Probá de nuevo en un momento.',
-    429,
+  // Build the uniform error body directly (no api-handler import — keeps this
+  // module free of the auth/next-server chain so it stays unit-testable).
+  return Response.json(
+    {
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Demasiadas solicitudes. Probá de nuevo en un momento.',
+      },
+    },
+    { status: 429, headers: { 'Retry-After': String(result.retryAfterSec) } },
   );
-  response.headers.set('Retry-After', String(result.retryAfterSec));
-  return response;
 }
 
 /** Test-only: clears all buckets between cases. */
