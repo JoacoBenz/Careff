@@ -8,6 +8,9 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
   OSRM_URL: z.string().url().default('https://router.project-osrm.org'),
+  // Argentine government geocoder (free, no key). Primary for AR addresses;
+  // Nominatim is the fallback for POIs / addresses outside Argentina.
+  GEOREF_URL: z.string().url().default('https://apis.datos.gob.ar/georef/api'),
 });
 
 function validateEnv() {

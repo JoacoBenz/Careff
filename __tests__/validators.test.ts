@@ -65,6 +65,19 @@ describe('carpoolPlanSchema', () => {
     }));
     expect(carpoolPlanSchema.safeParse({ ...validPlan, passengers }).success).toBe(false);
   });
+
+  it('accepts an optional coords map keyed by address', () => {
+    const result = carpoolPlanSchema.safeParse({
+      ...validPlan,
+      coords: { 'Av. Corrientes 1234': { lat: -34.6, lon: -58.39 } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects coords entries missing lat/lon', () => {
+    const plan = { ...validPlan, coords: { 'Av. Corrientes 1234': { lat: -34.6 } } };
+    expect(carpoolPlanSchema.safeParse(plan).success).toBe(false);
+  });
 });
 
 describe('registerSchema', () => {

@@ -4,6 +4,8 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
+import { RegionSelect } from './region-select';
+import { useRegion } from './use-region';
 
 const inputClass =
   'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
@@ -24,6 +26,7 @@ export function JoinGroupForm({
   groupName: string;
   initial?: JoinFormInitial;
 }) {
+  const [region, setRegion] = useRegion();
   const [name, setName] = useState(initial?.name ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
   const [hasCar, setHasCar] = useState(initial?.hasCar ?? false);
@@ -100,12 +103,19 @@ export function JoinGroupForm({
           className={`mt-1 ${inputClass}`}
         />
       </label>
+      <div className="text-sm text-slate-600">
+        Tu región
+        <div className="mt-1">
+          <RegionSelect value={region} onChange={setRegion} />
+        </div>
+      </div>
       <label className="block text-sm text-slate-600">
         Tu dirección (desde dónde salís)
         <div className="mt-1">
           <AddressInput
             value={address}
             onChange={setAddress}
+            region={{ country: region.country, provincia: region.provincia }}
             placeholder="Av. Rivadavia 5000, Buenos Aires"
             required
             className={inputClass}
