@@ -11,7 +11,12 @@ const km = (meters: number) => `${(meters / 1000).toFixed(1)} km`;
 const DEFAULT_PRICE = '1200';
 const DEFAULT_CONSUMO = '10';
 
-function whatsappUrl(route: DriverRoute, title: string, perPassenger: number): string {
+function whatsappUrl(
+  route: DriverRoute,
+  title: string,
+  perPassenger: number,
+  origin: string,
+): string {
   const lines = [`🚗 *${title}*`, '', `${route.driver}, esta es tu ruta:`];
   route.stops.forEach((stop, i) => lines.push(`${i + 1}. Buscar a ${stop.name} — ${stop.address}`));
   lines.push(
@@ -23,7 +28,7 @@ function whatsappUrl(route: DriverRoute, title: string, perPassenger: number): s
     '',
     `🗺️ Ruta en el mapa: ${route.mapUrl}`,
     '',
-    `Armado con Careff — ${typeof window === 'undefined' ? '' : window.location.origin}`,
+    origin ? `Armado con Careff — ${origin}` : 'Armado con Careff',
   );
   return `https://wa.me/?text=${encodeURIComponent(lines.join('\n'))}`;
 }
@@ -76,6 +81,15 @@ export function PlanResultView({
   const [priceTouched, setPriceTouched] = useState(false);
   // Per-car tolls/extras, keyed by route index.
   const [extras, setExtras] = useState<Record<number, string>>({});
+  // Resolved after mount so the WhatsApp link matches between SSR and client
+  // (reading window.location during render breaks hydration on shared pages).
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    // Post-mount sync of a browser-only value; safe and intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (typeof window !== 'undefined') setOrigin(window.location.origin);
+  }, []);
 
   // Pre-fill the fuel price from the Energía open dataset (best-effort).
   useEffect(() => {
@@ -239,7 +253,7 @@ export function PlanResultView({
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <a
-                  href={whatsappUrl(route, title, expense.perPassenger)}
+                  href={whatsappUrl(route, title, expense.perPassenger, origin)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
