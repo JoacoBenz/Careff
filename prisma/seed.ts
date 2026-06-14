@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
@@ -7,7 +8,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
-  const password = process.env.SEED_ADMIN_PASSWORD ?? crypto.randomUUID();
+  const password = process.env.SEED_ADMIN_PASSWORD ?? randomUUID();
 
   await prisma.user.upsert({
     where: { email },

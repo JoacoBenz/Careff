@@ -15,27 +15,34 @@ whole group can see the plan.
 
 ## Why it's free to run
 
-- **Geocoding**: [Nominatim](https://nominatim.org) public instance (OpenStreetMap) — no API key.
+- **Geocoding**: [Georef](https://datosgobar.github.io/georef-api-docs/) (Argentine
+  government geocoder) is the primary, house-number-precise source for AR addresses,
+  scoped by province to avoid same-named streets;
+  [Nominatim](https://nominatim.org) (OpenStreetMap) is the fallback for POIs and
+  addresses outside Argentina. No API key for either.
 - **Driving distances**: [OSRM](http://project-osrm.org) public demo server — one
   `table` call per plan returns the full distance matrix.
-- **Navigation links**: Google Maps deep links (`/maps/dir/?api=1`) — free, no key.
+- **Navigation links**: Google Maps deep links (`/maps/dir/?api=1`) with `lat,lng`
+  coordinates — free, no key.
+- **Fuel prices** (optional): the Secretaría de Energía open dataset suggests a
+  current Nafta Súper price for the trip-expense estimator (best-effort, editable).
 - **Hosting**: deploys on Vercel's free tier; PostgreSQL on Neon/Supabase free tier.
 
 Request caps in `lib/validators.ts` (≤10 drivers, ≤30 passengers) plus a geocode
 cache keep usage within the public instances' fair-use policies. For heavier
-traffic, point `NOMINATIM_URL` / `OSRM_URL` at self-hosted instances.
+traffic, point `GEOREF_URL` / `NOMINATIM_URL` / `OSRM_URL` at self-hosted instances.
 
 ## Stack
 
 Next.js App Router + TypeScript + Prisma/PostgreSQL + NextAuth + Zod + Vitest.
 
-| Piece              | Where                                                    |
-| ------------------ | -------------------------------------------------------- |
-| Planning algorithm | `lib/carpool.ts` (pure, distance function injected)      |
-| Geo providers      | `lib/geo.ts` (Nominatim + OSRM, swappable via env)       |
-| API                | `POST /api/carpool` (compute + save), `GET /api/carpool` |
-| UI                 | `/planner` (build a plan), `/plans` (saved plans)        |
-| Auth               | `/login`, `/register`, NextAuth credentials + JWT        |
+| Piece              | Where                                                       |
+| ------------------ | ----------------------------------------------------------- |
+| Planning algorithm | `lib/carpool.ts` (pure, distance function injected)         |
+| Geo providers      | `lib/geo.ts` (Georef + Nominatim + OSRM, swappable via env) |
+| API                | `POST /api/carpool` (compute + save), `GET /api/carpool`    |
+| UI                 | `/planner` (build a plan), `/plans` (saved plans)           |
+| Auth               | `/login`, `/register`, NextAuth credentials + JWT           |
 
 ## Setup
 
@@ -57,8 +64,9 @@ npm run dev
 
 ## Scripts
 
-`dev` · `build` · `start` · `lint` / `lint:fix` · `format` / `format:check` ·
-`test` / `test:watch` / `test:coverage` · `db:migrate` / `db:studio` / `db:seed`
+`dev` · `build` · `start` · `lint` / `lint:fix` · `typecheck` · `format` /
+`format:check` · `test` / `test:watch` / `test:coverage` · `db:migrate` /
+`db:studio` / `db:seed`
 
 ## Conventions
 

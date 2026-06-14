@@ -20,6 +20,9 @@ const eslintConfig = defineConfig([
       ],
       'prefer-const': 'warn',
       eqeqeq: ['error', 'smart'],
+      // Pin explicitly so the inline disables in client effects stay meaningful
+      // even if the Next preset changes this rule's default level.
+      'react-hooks/set-state-in-effect': 'error',
     },
   },
   {
