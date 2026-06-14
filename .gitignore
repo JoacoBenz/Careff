@@ -8,7 +8,7 @@ build/
 next-env.d.ts
 
 # prisma generated client
-/app/generated/prisma
+/generated/prisma
 
 # env — only .env.example is committed
 .env

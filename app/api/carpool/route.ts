@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { carpoolPlanSchema, type CarpoolPlanInput } from '@/lib/validators';
 import { planCarpool, withCity } from '@/lib/carpool';
 import { buildDistanceFn, AddressNotFoundError, GeoProviderError } from '@/lib/geo';
-import type { Prisma } from '@/app/generated/prisma/client';
+import type { Prisma } from '@/generated/prisma/client';
 
 // Guest mode: anyone can compute a plan; only logged-in users get it saved
 // (with a public share token).
