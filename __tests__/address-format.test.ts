@@ -17,4 +17,8 @@ describe('prettyLabel', () => {
   it('capitalizes a leading connector', () => {
     expect(prettyLabel('LA PLATA')).toBe('La Plata');
   });
+
+  it('title-cases digit-bearing words that are not house numbers or postal codes', () => {
+    expect(prettyLabel('RUTA 2 KM8')).toBe('Ruta 2 Km8');
+  });
 });

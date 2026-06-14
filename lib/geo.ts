@@ -165,6 +165,10 @@ function isArgentina(region?: Region): boolean {
  * Autocomplete suggestions. In Argentina: Georef (constrained to the province,
  * which removes same-named streets elsewhere) first, then Nominatim(AR). In
  * other countries: Nominatim scoped to that country.
+ *
+ * Note: the Nominatim fallback is constrained by country only — Georef's
+ * province ids aren't portable to Nominatim — so in the rare case Georef
+ * returns nothing, results may include other provinces.
  */
 export async function searchAddresses(
   query: string,
@@ -183,12 +187,20 @@ export async function searchAddresses(
 // Process-wide cache: repeated plans usually share addresses, and caching keeps
 // us polite with the public geocoders. Keyed by region + address.
 const geocodeCache = new Map<string, Coordinates>();
+// Short-lived negative cache so a retried plan with an unresolvable address
+// doesn't re-hit both providers every attempt.
+const geocodeMisses = new Map<string, number>();
+const MISS_TTL_MS = 5 * 60 * 1000;
 
 async function geocode(address: string, region?: Region): Promise<Coordinates> {
   const country = region?.country?.toLowerCase() || 'ar';
   const cacheKey = `${country}|${region?.provincia ?? ''}|${address}`;
   const cached = geocodeCache.get(cacheKey);
   if (cached) return cached;
+  const missedAt = geocodeMisses.get(cacheKey);
+  if (missedAt !== undefined && Date.now() - missedAt < MISS_TTL_MS) {
+    throw new AddressNotFoundError(address);
+  }
 
   let coords: Coordinates | null = null;
 
@@ -200,13 +212,16 @@ async function geocode(address: string, region?: Region): Promise<Coordinates> {
     if (ar.length > 0) coords = { lat: ar[0].lat, lon: ar[0].lon };
   }
 
-  // Fallback to Nominatim, scoped to the country.
+  // Fallback to Nominatim, scoped to the country (province not portable here).
   if (!coords) {
     const osm = await nominatimSearch(address, 1, country).catch(() => [] as AddressSuggestion[]);
     if (osm.length > 0) coords = { lat: osm[0].lat, lon: osm[0].lon };
   }
 
-  if (!coords) throw new AddressNotFoundError(address);
+  if (!coords) {
+    geocodeMisses.set(cacheKey, Date.now());
+    throw new AddressNotFoundError(address);
+  }
   geocodeCache.set(cacheKey, coords);
   return coords;
 }
@@ -234,11 +249,12 @@ export async function buildDistanceFn(
   region?: Region,
 ): Promise<DistanceData> {
   const unique = [...new Set(addresses)];
-  const coords: Coordinates[] = [];
-  for (const address of unique) {
-    const hint = hints?.get(address);
-    coords.push(hint ?? (await geocode(address, region)));
-  }
+  // Resolve addresses in parallel (cache-miss lookups dominate latency on the
+  // plan hot path). Hints from autocomplete skip the network entirely; most of
+  // the rest hit the geocode cache, so concurrency stays polite to the providers.
+  const coords = await Promise.all(
+    unique.map((address) => hints?.get(address) ?? geocode(address, region)),
+  );
   const coordsByAddress = new Map(unique.map((address, i) => [address, coords[i]]));
 
   const pairs = coords.map((c) => `${c.lon},${c.lat}`).join(';');
