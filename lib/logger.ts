@@ -1,3 +1,5 @@
+import { after } from 'next/server';
+
 type LogLevel = 'info' | 'warn' | 'error';
 
 interface LogEntry {
@@ -22,11 +24,40 @@ function formatError(error: unknown): unknown {
   return String(error);
 }
 
+// Optional centralized monitoring: when MISSION_CONTROL_URL and
+// MISSION_CONTROL_API_KEY are set, warn/error entries are also shipped to the
+// Mission Control dashboard. Fire-and-forget: monitoring must never break the app.
+function deliver(entry: LogEntry): void {
+  const url = process.env.MISSION_CONTROL_URL;
+  const key = process.env.MISSION_CONTROL_API_KEY;
+  if (!url || !key) return;
+  void fetch(`${url.replace(/\/$/, '')}/api/ingest`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+    body: JSON.stringify(entry),
+    // keepalive lets the request outlive the response on most runtimes
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
+function ship(entry: LogEntry): void {
+  // after() defers delivery until the response is sent and keeps the serverless
+  // instance alive until it completes — without it, error reports are dropped
+  // whenever the platform freezes the instance right after responding. Outside a
+  // request scope (scripts, boot) it throws: send direct.
+  try {
+    after(() => deliver(entry));
+  } catch {
+    deliver(entry);
+  }
+}
+
 function log(entry: LogEntry): void {
   const output = JSON.stringify(entry);
   if (entry.level === 'error') console.error(output);
   else if (entry.level === 'warn') console.warn(output);
   else console.warn(output); // structured info also goes to stderr-safe channel
+  if (entry.level === 'error' || entry.level === 'warn') ship(entry);
 }
 
 export function logApiError(path: string, method: string, error: unknown): void {
