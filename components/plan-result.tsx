@@ -80,6 +80,7 @@ export function PlanResultView({
   const [price, setPrice] = useState(DEFAULT_PRICE);
   const [consumo, setConsumo] = useState(DEFAULT_CONSUMO);
   const [driverPays, setDriverPays] = useState(true);
+  const [roundTrip, setRoundTrip] = useState(false);
   const [priceNote, setPriceNote] = useState<string | null>(null);
   const [priceTouched, setPriceTouched] = useState(false);
   // Per-car tolls/extras, keyed by route index.
@@ -176,6 +177,15 @@ export function PlanResultView({
             <label className="flex items-center gap-2 text-xs text-slate-600">
               <input
                 type="checkbox"
+                checked={roundTrip}
+                onChange={(e) => setRoundTrip(e.target.checked)}
+                className="accent-emerald-600"
+              />
+              Ida y vuelta (duplica la nafta)
+            </label>
+            <label className="flex items-center gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
                 checked={driverPays}
                 onChange={(e) => setDriverPays(e.target.checked)}
                 className="accent-emerald-600"
@@ -196,6 +206,7 @@ export function PlanResultView({
                 extras: Number(extras[i]) || 0,
                 passengers: route.stops.length,
                 driverPays,
+                roundTrip,
               })
             : null;
           return (
@@ -237,6 +248,7 @@ export function PlanResultView({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-slate-600">
                       Nafta {formatMoney(expense.fuel)}
+                      {roundTrip && <span className="text-slate-400"> (ida y vuelta)</span>}
                       <span className="text-slate-400"> + peajes </span>
                       <input
                         type="number"

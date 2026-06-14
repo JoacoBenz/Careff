@@ -16,6 +16,8 @@ export interface ExpenseInput {
   passengers: number;
   /** Whether the driver shares the cost too (equal split) or rides "free". */
   driverPays: boolean;
+  /** Driver returns home after the destination — doubles the fuel distance. */
+  roundTrip?: boolean;
 }
 
 export interface ExpenseResult {
@@ -29,7 +31,9 @@ export interface ExpenseResult {
 }
 
 export function computeExpense(input: ExpenseInput): ExpenseResult {
-  const km = Math.max(0, input.distanceMeters) / 1000;
+  const oneWayKm = Math.max(0, input.distanceMeters) / 1000;
+  // Round trip: the driver also drives the same route back home.
+  const km = input.roundTrip ? oneWayKm * 2 : oneWayKm;
   const liters = (km / 100) * Math.max(0, input.litersPer100km);
   const fuel = liters * Math.max(0, input.pricePerLiter);
   const extras = Math.max(0, input.extras);

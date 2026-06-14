@@ -57,6 +57,29 @@ describe('computeExpense', () => {
     expect(r.perPassenger).toBe(2_500);
   });
 
+  it('doubles the fuel for a round trip but leaves tolls untouched', () => {
+    const oneWay = computeExpense({
+      distanceMeters: 100_000,
+      litersPer100km: 10,
+      pricePerLiter: 1000,
+      extras: 3_000,
+      passengers: 3,
+      driverPays: true,
+    });
+    const round = computeExpense({
+      distanceMeters: 100_000,
+      litersPer100km: 10,
+      pricePerLiter: 1000,
+      extras: 3_000,
+      passengers: 3,
+      driverPays: true,
+      roundTrip: true,
+    });
+    expect(round.fuel).toBe(oneWay.fuel * 2);
+    expect(round.extras).toBe(3_000);
+    expect(round.total).toBe(oneWay.fuel * 2 + 3_000);
+  });
+
   it('returns zero per-passenger when there are no passengers', () => {
     const r = computeExpense({
       distanceMeters: 100_000,
