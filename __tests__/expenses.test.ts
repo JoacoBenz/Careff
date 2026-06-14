@@ -39,9 +39,12 @@ describe('computeExpense', () => {
       passengers: 3,
       driverPays: true,
     });
-    // 4 occupants share $10000 → $2500 each.
+    // 4 occupants share $10000 → $2500 each; the driver covers one share too.
     expect(r.occupants).toBe(4);
     expect(r.perPassenger).toBe(2_500);
+    expect(r.perDriver).toBe(2_500);
+    // The shares reconcile to the total when the driver pays.
+    expect(r.perPassenger * 3 + r.perDriver).toBe(r.total);
   });
 
   it('splits among passengers only when driver rides free', () => {
@@ -55,6 +58,7 @@ describe('computeExpense', () => {
     });
     expect(r.occupants).toBe(4);
     expect(r.perPassenger).toBe(2_500);
+    expect(r.perDriver).toBe(0);
   });
 
   it('doubles the fuel for a round trip but leaves tolls untouched', () => {

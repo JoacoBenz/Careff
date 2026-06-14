@@ -17,6 +17,7 @@ function whatsappUrl(
   title: string,
   perPassenger: number,
   origin: string,
+  roundTrip: boolean,
 ): string {
   const lines = [`🚗 *${title}*`, '', `${route.driver}, esta es tu ruta:`];
   route.stops.forEach((stop, i) => lines.push(`${i + 1}. Buscar a ${stop.name} — ${stop.address}`));
@@ -24,7 +25,11 @@ function whatsappUrl(
     `🏁 Destino: ${route.addresses[route.addresses.length - 1]}`,
     `📏 ${km(route.distanceMeters)} en total`,
   );
-  if (perPassenger > 0) lines.push(`💸 Cada pasajero pone ${formatMoney(perPassenger)}`);
+  if (perPassenger > 0) {
+    lines.push(
+      `💸 Cada pasajero pone ${formatMoney(perPassenger)}${roundTrip ? ' (ida y vuelta)' : ''}`,
+    );
+  }
   lines.push(
     '',
     `🗺️ Ruta en el mapa: ${route.mapUrl}`,
@@ -263,7 +268,9 @@ export function PlanResultView({
                   {route.stops.length > 0 && expense.perPassenger > 0 && (
                     <p className="mt-2 font-medium text-emerald-700">
                       Cada pasajero le pone {formatMoney(expense.perPassenger)} a {route.driver}
-                      {driverPays ? '' : ' (el conductor no paga)'}
+                      {driverPays
+                        ? `; ${route.driver} también pone ${formatMoney(expense.perDriver)}`
+                        : ' (el conductor no paga)'}
                     </p>
                   )}
                 </div>
@@ -271,7 +278,7 @@ export function PlanResultView({
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <a
-                  href={whatsappUrl(route, title, expense?.perPassenger ?? 0, origin)}
+                  href={whatsappUrl(route, title, expense?.perPassenger ?? 0, origin, roundTrip)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"

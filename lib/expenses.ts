@@ -28,6 +28,8 @@ export interface ExpenseResult {
   occupants: number;
   /** What each passenger reimburses the driver. */
   perPassenger: number;
+  /** The driver's own share (0 when the driver rides free). */
+  perDriver: number;
 }
 
 export function computeExpense(input: ExpenseInput): ExpenseResult {
@@ -41,10 +43,12 @@ export function computeExpense(input: ExpenseInput): ExpenseResult {
 
   const passengers = Math.max(0, input.passengers);
   const occupants = passengers + (input.driverPays ? 1 : 0);
-  // Each passenger pays one share; the driver keeps their own share (if any).
-  const perPassenger = occupants > 0 && passengers > 0 ? total / occupants : 0;
+  // Each occupant pays an equal share. With driverPays, the driver covers one
+  // share themselves (perDriver); otherwise the passengers split the whole cost.
+  const perPassenger = passengers > 0 ? total / occupants : 0;
+  const perDriver = input.driverPays && occupants > 0 ? total / occupants : 0;
 
-  return { fuel, extras, total, occupants, perPassenger };
+  return { fuel, extras, total, occupants, perPassenger, perDriver };
 }
 
 /** ARS-style currency formatting (no decimals — amounts are rough estimates). */
