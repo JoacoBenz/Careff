@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { joinGroupSchema, type JoinGroupInput } from '@/lib/validators';
 import { PROFILE_COOKIE } from '@/lib/profile-cookie';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 const MAX_MEMBERS = 40;
 
@@ -15,7 +16,10 @@ const MAX_MEMBERS = 40;
 export const POST = withOptionalAuth(
   withValidation<JoinGroupInput, OptionalAuthContext>(
     joinGroupSchema,
-    async (_request, { session, data }) => {
+    async (request, { session, data }) => {
+      const limited = enforceRateLimit(request, 'join', { limit: 20, windowMs: 600_000 });
+      if (limited) return limited;
+
       const group = await prisma.group.findUnique({
         where: { inviteToken: data.token },
         include: { _count: { select: { members: true } } },

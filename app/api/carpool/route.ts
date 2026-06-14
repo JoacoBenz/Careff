@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { carpoolPlanSchema, type CarpoolPlanInput } from '@/lib/validators';
 import { planCarpool, withCity } from '@/lib/carpool';
 import { buildDistanceFn, AddressNotFoundError, GeoProviderError } from '@/lib/geo';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import type { Prisma } from '@/generated/prisma/client';
 
 // Guest mode: anyone can compute a plan; only logged-in users get it saved
@@ -17,7 +18,12 @@ import type { Prisma } from '@/generated/prisma/client';
 export const POST = withOptionalAuth(
   withValidation<CarpoolPlanInput, OptionalAuthContext>(
     carpoolPlanSchema,
-    async (_request, { session, data }) => {
+    async (request, { session, data }) => {
+      // Each plan triggers up to ~41 external geocode/routing calls — throttle
+      // to prevent amplification abuse against this server and the free providers.
+      const limited = enforceRateLimit(request, 'carpool', { limit: 30, windowMs: 600_000 });
+      if (limited) return limited;
+
       const destination = withCity(data.destination, data.city);
       const drivers = data.drivers.map((d) => ({ ...d, address: withCity(d.address, data.city) }));
       const passengers = data.passengers.map((p) => ({

@@ -7,12 +7,16 @@ import {
   withValidation,
   type OptionalAuthContext,
 } from '@/lib/api-handler';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 // Public endpoint: creates an account. Composes the standard wrappers
 // (withOptionalAuth + withValidation) for uniform JSON parsing, validation and
 // error handling — no hand-rolled try/catch.
 export const POST = withOptionalAuth(
-  withValidation<RegisterInput, OptionalAuthContext>(registerSchema, async (_request, { data }) => {
+  withValidation<RegisterInput, OptionalAuthContext>(registerSchema, async (request, { data }) => {
+    const limited = enforceRateLimit(request, 'register', { limit: 10, windowMs: 900_000 });
+    if (limited) return limited;
+
     const { email, name, password } = data;
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
