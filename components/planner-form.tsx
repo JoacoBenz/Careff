@@ -2,14 +2,14 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import type { CarpoolPlanResult } from '@/lib/carpool';
-import type { ApiErrorBody } from '@/types';
+import { seatBudget } from '@/lib/seat-budget';
 import { AddressInput } from './address-input';
 import { PlanResultView } from './plan-result';
 import { RouteLoading } from './route-loading';
 import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
 import { useOrigin } from './use-origin';
+import { useCarpoolPlan } from './use-carpool-plan';
 import { fieldBase, inputClass } from './form-styles';
 
 // Stable per-row id so React keys survive row removal (index keys would
@@ -35,12 +35,6 @@ interface PassengerRow {
 }
 
 type Coords = { lat: number; lon: number };
-
-interface PlanResponse {
-  plan: CarpoolPlanResult;
-  saved: boolean;
-  shareToken?: string;
-}
 
 function SectionCard({
   step,
@@ -87,15 +81,14 @@ export function PlannerForm({
   const [passengers, setPassengers] = useState<PassengerRow[]>([
     { id: newRowId(), name: '', address: '' },
   ]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PlanResponse | null>(null);
+  const { loading, error, result, submit } = useCarpoolPlan();
 
   // Live seat budget: passengers can never outnumber the seats the drivers
   // bring, so the "+ Agregar pasajero" button locks when the cars are full.
-  const totalSeats = drivers.reduce((sum, d) => sum + (Number(d.capacity) || 0), 0);
-  const seatsFull = passengers.length >= totalSeats;
-  const overCapacity = passengers.length > totalSeats;
+  const { totalSeats, seatsFull, overCapacity } = seatBudget(
+    drivers.map((d) => Number(d.capacity) || 0),
+    passengers.length,
+  );
 
   function updateDriver(index: number, patch: Partial<DriverRow>) {
     setDrivers((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -107,46 +100,27 @@ export function PlannerForm({
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      // Coordinates captured when a suggestion was picked, keyed by address.
-      const coords: Record<string, Coords> = {};
-      for (const d of drivers)
-        if (d.lat != null && d.lon != null) coords[d.address] = { lat: d.lat, lon: d.lon };
-      for (const p of passengers)
-        if (p.lat != null && p.lon != null) coords[p.address] = { lat: p.lat, lon: p.lon };
-      if (destinationCoords) coords[destination] = destinationCoords;
+    // Coordinates captured when a suggestion was picked, keyed by address.
+    const coords: Record<string, Coords> = {};
+    for (const d of drivers)
+      if (d.lat != null && d.lon != null) coords[d.address] = { lat: d.lat, lon: d.lon };
+    for (const p of passengers)
+      if (p.lat != null && p.lon != null) coords[p.address] = { lat: p.lat, lon: p.lon };
+    if (destinationCoords) coords[destination] = destinationCoords;
 
-      const response = await fetch('/api/carpool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title || `Viaje a ${destination}`,
-          destination,
-          drivers: drivers.map((d) => ({
-            name: d.name,
-            address: d.address,
-            capacity: Number(d.capacity),
-          })),
-          passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
-          coords: Object.keys(coords).length > 0 ? coords : undefined,
-          country: region.country,
-          provincia: region.provincia,
-        }),
-      });
-      const body: unknown = await response.json();
-      if (!response.ok) {
-        setError((body as ApiErrorBody).error.message);
-        return;
-      }
-      setResult(body as PlanResponse);
-    } catch {
-      setError('No se pudo calcular el plan. Revisá tu conexión e intentá de nuevo.');
-    } finally {
-      setLoading(false);
-    }
+    await submit({
+      title: title || `Viaje a ${destination}`,
+      destination,
+      drivers: drivers.map((d) => ({
+        name: d.name,
+        address: d.address,
+        capacity: Number(d.capacity),
+      })),
+      passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
+      coords: Object.keys(coords).length > 0 ? coords : undefined,
+      country: region.country,
+      provincia: region.provincia,
+    });
   }
 
   return (

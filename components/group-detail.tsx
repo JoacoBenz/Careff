@@ -2,14 +2,14 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import type { CarpoolPlanResult } from '@/lib/carpool';
-import type { ApiErrorBody } from '@/types';
+import { seatBudget } from '@/lib/seat-budget';
 import { AddressInput } from './address-input';
 import { PlanResultView, CopyLinkButton } from './plan-result';
 import { RouteLoading } from './route-loading';
 import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
 import { useOrigin } from './use-origin';
+import { useCarpoolPlan } from './use-carpool-plan';
 import { inputClass } from './form-styles';
 
 export interface GroupMemberView {
@@ -120,12 +120,6 @@ export function MemberList({ groupId, members }: { groupId: number; members: Gro
   );
 }
 
-interface PlanResponse {
-  plan: CarpoolPlanResult;
-  saved: boolean;
-  shareToken?: string;
-}
-
 export function GroupPlanner({
   groupName,
   members,
@@ -141,54 +135,35 @@ export function GroupPlanner({
   const [destinationCoords, setDestinationCoords] = useState<
     { lat: number; lon: number } | undefined
   >();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PlanResponse | null>(null);
+  const { loading, error, result, submit } = useCarpoolPlan();
 
   const drivers = members.filter((m) => m.hasCar && m.seats > 0);
   const passengers = members.filter((m) => !m.hasCar);
-  const totalSeats = drivers.reduce((sum, d) => sum + d.seats, 0);
-  const overCapacity = passengers.length > totalSeats;
+  const { totalSeats, overCapacity } = seatBudget(
+    drivers.map((d) => d.seats),
+    passengers.length,
+  );
   const ready = drivers.length > 0 && passengers.length > 0 && !overCapacity;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      // Reuse the coordinates captured when each member joined, so the server
-      // skips re-geocoding them; add the destination's coords too.
-      const coords: Record<string, { lat: number; lon: number }> = {};
-      for (const m of members) {
-        if (m.lat != null && m.lon != null) coords[m.address] = { lat: m.lat, lon: m.lon };
-      }
-      if (destinationCoords) coords[destination] = destinationCoords;
-
-      const response = await fetch('/api/carpool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: `${groupName} — viaje`,
-          destination,
-          drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
-          passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
-          coords: Object.keys(coords).length > 0 ? coords : undefined,
-          country: region.country,
-          provincia: region.provincia,
-        }),
-      });
-      const body: unknown = await response.json();
-      if (!response.ok) {
-        setError((body as ApiErrorBody).error.message);
-        return;
-      }
-      setResult(body as PlanResponse);
-    } catch {
-      setError('No se pudo calcular el plan. Revisá tu conexión e intentá de nuevo.');
-    } finally {
-      setLoading(false);
+    // Reuse the coordinates captured when each member joined, so the server
+    // skips re-geocoding them; add the destination's coords too.
+    const coords: Record<string, { lat: number; lon: number }> = {};
+    for (const m of members) {
+      if (m.lat != null && m.lon != null) coords[m.address] = { lat: m.lat, lon: m.lon };
     }
+    if (destinationCoords) coords[destination] = destinationCoords;
+
+    await submit({
+      title: `${groupName} — viaje`,
+      destination,
+      drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
+      passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
+      coords: Object.keys(coords).length > 0 ? coords : undefined,
+      country: region.country,
+      provincia: region.provincia,
+    });
   }
 
   return (
