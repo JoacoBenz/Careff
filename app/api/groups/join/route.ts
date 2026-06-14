@@ -27,17 +27,32 @@ export const POST = withOptionalAuth(
       if (!group) {
         return apiError('GROUP_NOT_FOUND', 'El link de invitación no es válido.', 404);
       }
-      if (group._count.members >= MAX_MEMBERS) {
+
+      // Re-joining (same name + address) updates the existing row instead of
+      // duplicating it; the full-group check only applies to genuinely new members.
+      const seats = data.hasCar ? data.seats : 0;
+      const existing = await prisma.groupMember.findUnique({
+        where: {
+          groupId_name_address: { groupId: group.id, name: data.name, address: data.address },
+        },
+      });
+      if (!existing && group._count.members >= MAX_MEMBERS) {
         return apiError('GROUP_FULL', 'El grupo ya alcanzó el máximo de integrantes.', 422);
       }
 
-      const member = await prisma.groupMember.create({
-        data: {
+      const member = await prisma.groupMember.upsert({
+        where: {
+          groupId_name_address: { groupId: group.id, name: data.name, address: data.address },
+        },
+        update: { hasCar: data.hasCar, seats, lat: data.lat, lon: data.lon },
+        create: {
           groupId: group.id,
           name: data.name,
           address: data.address,
           hasCar: data.hasCar,
-          seats: data.hasCar ? data.seats : 0,
+          seats,
+          lat: data.lat,
+          lon: data.lon,
         },
       });
 

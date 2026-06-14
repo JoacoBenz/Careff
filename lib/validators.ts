@@ -101,6 +101,9 @@ export const joinGroupSchema = z
     address: addressSchema,
     hasCar: z.boolean(),
     seats: z.coerce.number().int().min(0).max(8).default(0),
+    // Coordinates from the autocomplete pick (skip re-geocoding at plan time).
+    lat: z.number().optional(),
+    lon: z.number().optional(),
   })
   .refine((data) => !data.hasCar || data.seats >= 1, {
     message: 'Si tenés auto, indicá al menos 1 asiento libre',

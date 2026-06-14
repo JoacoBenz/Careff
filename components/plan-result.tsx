@@ -74,7 +74,9 @@ export function PlanResultView({
   /** Hidden on the public share link (read-only) — only the organizer sees it. */
   showExpenses?: boolean;
 }) {
-  const passengerCount = Object.keys(plan.assignments).length;
+  // Count placed passengers from the routes (robust to two passengers sharing
+  // a name, which would collide in the name-keyed assignments map).
+  const passengerCount = plan.routes.reduce((sum, r) => sum + r.stops.length, 0);
 
   // Trip-wide expense inputs (fuel price + consumption + who pays).
   const [price, setPrice] = useState(DEFAULT_PRICE);

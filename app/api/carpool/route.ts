@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import {
   withAuth,
   withOptionalAuth,
@@ -6,6 +5,7 @@ import {
   apiError,
   type OptionalAuthContext,
 } from '@/lib/api-handler';
+import { createWithUniqueToken } from '@/lib/tokens';
 import { prisma } from '@/lib/prisma';
 import { carpoolPlanSchema, type CarpoolPlanInput } from '@/lib/validators';
 import { planCarpool, withCity } from '@/lib/carpool';
@@ -82,16 +82,18 @@ export const POST = withOptionalAuth(
         return Response.json({ plan: result, saved: false }, { status: 200 });
       }
 
-      const saved = await prisma.carpoolPlan.create({
-        data: {
-          userId: Number(session.user.id),
-          title: data.title,
-          destination,
-          input: data as unknown as Prisma.InputJsonValue,
-          result: result as unknown as Prisma.InputJsonValue,
-          shareToken: randomBytes(9).toString('base64url'),
-        },
-      });
+      const saved = await createWithUniqueToken((shareToken) =>
+        prisma.carpoolPlan.create({
+          data: {
+            userId: Number(session.user.id),
+            title: data.title,
+            destination,
+            input: data as unknown as Prisma.InputJsonValue,
+            result: result as unknown as Prisma.InputJsonValue,
+            shareToken,
+          },
+        }),
+      );
 
       return Response.json(
         { id: saved.id, plan: result, saved: true, shareToken: saved.shareToken },

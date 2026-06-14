@@ -48,10 +48,16 @@ model GroupMember {
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   name      String
   address   String
+  // Coordinates captured from the autocomplete pick at join time, so the
+  // planner doesn't have to re-geocode every member on each calculation.
+  lat       Float?
+  lon       Float?
   hasCar    Boolean  @default(false) @map("has_car")
   seats     Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
 
+  // The same person can't be listed twice in a group; a re-join updates them.
+  @@unique([groupId, name, address])
   @@index([groupId])
   @@map("group_members")
 }

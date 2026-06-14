@@ -1,17 +1,19 @@
-import { randomBytes } from 'node:crypto';
 import { withAuth, withValidation } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { createGroupSchema } from '@/lib/validators';
+import { createWithUniqueToken } from '@/lib/tokens';
 
 export const POST = withAuth(
   withValidation(createGroupSchema, async (_request, { session, data }) => {
-    const group = await prisma.group.create({
-      data: {
-        name: data.name,
-        ownerId: Number(session.user.id),
-        inviteToken: randomBytes(9).toString('base64url'),
-      },
-    });
+    const group = await createWithUniqueToken((inviteToken) =>
+      prisma.group.create({
+        data: {
+          name: data.name,
+          ownerId: Number(session.user.id),
+          inviteToken,
+        },
+      }),
+    );
     return Response.json(
       { id: group.id, name: group.name, inviteToken: group.inviteToken },
       { status: 201 },
