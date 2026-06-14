@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +34,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+      <Link href="/" aria-label="Inicio">
+        <Logo />
+      </Link>
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow"
@@ -66,10 +71,16 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          className="btn-glow w-full rounded-lg py-2 disabled:opacity-50"
         >
           {loading ? 'Ingresando…' : 'Ingresar'}
         </button>
+        <p className="text-center text-sm text-gray-500">
+          ¿No tenés cuenta?{' '}
+          <Link href="/register" className="link-sweep font-medium text-emerald-700">
+            Crear cuenta gratis
+          </Link>
+        </p>
       </form>
     </main>
   );

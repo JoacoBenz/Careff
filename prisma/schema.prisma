@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -8,12 +8,71 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String        @map("password_hash")
   name         String
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  // Set the first time the user declares a departure address; used to
+  // prefill address fields from then on.
+  defaultAddress String?     @map("default_address")
+  // Saved region defaults (profile) — seed the planner's address autocomplete.
+  defaultCountry      String? @map("default_country")
+  defaultProvinceId   String? @map("default_province_id")
+  defaultProvinceName String? @map("default_province_name")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  carpoolPlans CarpoolPlan[]
+  groups       Group[]
 
   @@map("users")
+}
+
+model Group {
+  id          Int           @id @default(autoincrement())
+  name        String
+  ownerId     Int           @map("owner_id")
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  inviteToken String        @unique @map("invite_token")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  members     GroupMember[]
+
+  @@index([ownerId])
+  @@map("groups")
+}
+
+// People join via the invite link without an account: each member declares
+// whether they bring a car and how many free seats it has.
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int      @map("group_id")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  address   String
+  // Coordinates captured from the autocomplete pick at join time, so the
+  // planner doesn't have to re-geocode every member on each calculation.
+  lat       Float?
+  lon       Float?
+  hasCar    Boolean  @default(false) @map("has_car")
+  seats     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // The same person can't be listed twice in a group; a re-join updates them.
+  @@unique([groupId, name, address])
+  @@index([groupId])
+  @@map("group_members")
+}
+
+model CarpoolPlan {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  destination String
+  input       Json
+  result      Json
+  shareToken  String?  @unique @map("share_token")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("carpool_plans")
 }

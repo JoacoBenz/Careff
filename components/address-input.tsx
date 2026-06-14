@@ -1,0 +1,107 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import type { AddressSuggestion } from '@/lib/geo';
+
+interface AddressInputProps {
+  value: string;
+  // coords are provided only when the value comes from picking a suggestion;
+  // typing emits no coords so the parent clears any stale pin.
+  onChange: (value: string, coords?: { lat: number; lon: number }) => void;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+  // Constrains suggestions to a country (Nominatim) / province (Georef).
+  region?: { country?: string; provincia?: string };
+}
+
+/**
+ * Address field with debounced autocomplete backed by /api/geo/search.
+ * Selecting a suggestion replaces the text with the geocoder's canonical
+ * address and passes its exact coordinates up, so the plan request skips
+ * re-geocoding that address.
+ */
+export function AddressInput({
+  value,
+  onChange,
+  placeholder,
+  required,
+  className,
+  region,
+}: AddressInputProps) {
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const controller = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+      controller.current?.abort();
+    };
+  }, []);
+
+  function handleChange(next: string) {
+    onChange(next);
+    if (timer.current) clearTimeout(timer.current);
+    controller.current?.abort();
+    if (next.trim().length < 4) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    timer.current = setTimeout(async () => {
+      controller.current = new AbortController();
+      try {
+        const params = new URLSearchParams({ q: next });
+        if (region?.country) params.set('country', region.country);
+        if (region?.provincia) params.set('prov', region.provincia);
+        const response = await fetch(`/api/geo/search?${params.toString()}`, {
+          signal: controller.current.signal,
+        });
+        if (!response.ok) return;
+        const body = (await response.json()) as { suggestions: AddressSuggestion[] };
+        setSuggestions(body.suggestions);
+        setOpen(body.suggestions.length > 0);
+      } catch {
+        // Aborted or offline: keep the typed text — it still gets geocoded
+        // server-side on submit.
+      }
+    }, 300);
+  }
+
+  return (
+    <div className="relative w-full">
+      <input
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        onFocus={() => setOpen(suggestions.length > 0)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        required={required}
+        className={className}
+        autoComplete="off"
+      />
+      {open && (
+        <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          {suggestions.map((s, i) => (
+            // Labels are deduped server-side; index guards against any
+            // remaining collision (Nominatim can repeat coordinates).
+            <li key={`${i}-${s.label}`}>
+              <button
+                type="button"
+                onMouseDown={() => {
+                  onChange(s.label, { lat: s.lat, lon: s.lon });
+                  setOpen(false);
+                }}
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50"
+              >
+                📍 {s.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

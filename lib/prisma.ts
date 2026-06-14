@@ -1,4 +1,4 @@
-import { PrismaClient } from '@/app/generated/prisma/client';
+import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 // Hot-reload-safe singleton: in dev, Next.js re-evaluates modules on every
