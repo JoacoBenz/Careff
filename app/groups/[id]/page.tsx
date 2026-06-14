@@ -33,7 +33,22 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     address: m.address,
     hasCar: m.hasCar,
     seats: m.seats,
+    lat: m.lat,
+    lon: m.lon,
   }));
+
+  // The owner's saved region defaults the planner's address autocomplete.
+  const owner = await prisma.user.findUnique({
+    where: { id: Number(session.user.id) },
+    select: { defaultCountry: true, defaultProvinceId: true, defaultProvinceName: true },
+  });
+  const initialRegion = owner?.defaultCountry
+    ? {
+        country: owner.defaultCountry,
+        provincia: owner.defaultProvinceId ?? undefined,
+        provinceName: owner.defaultProvinceName ?? undefined,
+      }
+    : undefined;
 
   return (
     <div className="min-h-screen">
@@ -58,7 +73,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
           <MemberList groupId={group.id} members={members} />
         </section>
 
-        <GroupPlanner groupName={group.name} members={members} />
+        <GroupPlanner groupName={group.name} members={members} initialRegion={initialRegion} />
       </main>
     </div>
   );

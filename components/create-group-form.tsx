@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ApiErrorBody } from '@/types';
+import { inputClass } from './form-styles';
 
 export function CreateGroupForm() {
   const router = useRouter();
@@ -27,30 +28,34 @@ export function CreateGroupForm() {
       }
       router.push(`/groups/${(body as { id: number }).id}`);
       router.refresh();
+    } catch {
+      setError('No se pudo crear el grupo. Revisá tu conexión e intentá de nuevo.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex gap-2">
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Fútbol de los jueves"
-        required
-        maxLength={80}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-glow shrink-0 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-      >
-        {loading ? 'Creando…' : 'Crear grupo'}
-      </button>
+    <form onSubmit={onSubmit}>
+      <div className="flex gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Fútbol de los jueves"
+          required
+          maxLength={80}
+          className={inputClass}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-glow shrink-0 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+        >
+          {loading ? 'Creando…' : 'Crear grupo'}
+        </button>
+      </div>
       {error && (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="mt-2 text-sm text-red-700" role="alert">
           {error}
         </p>
       )}

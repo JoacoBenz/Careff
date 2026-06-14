@@ -9,8 +9,16 @@ import { PlanResultView } from './plan-result';
 import { RouteLoading } from './route-loading';
 import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
+import { useOrigin } from './use-origin';
+import { fieldBase, inputClass } from './form-styles';
+
+// Stable per-row id so React keys survive row removal (index keys would
+// mis-associate each AddressInput's internal suggestion state on delete).
+let rowSeq = 0;
+const newRowId = () => `r${++rowSeq}`;
 
 interface DriverRow {
+  id: string;
   name: string;
   address: string;
   capacity: string;
@@ -19,6 +27,7 @@ interface DriverRow {
 }
 
 interface PassengerRow {
+  id: string;
   name: string;
   address: string;
   lat?: number;
@@ -32,13 +41,6 @@ interface PlanResponse {
   saved: boolean;
   shareToken?: string;
 }
-
-// Field base WITHOUT a width, so width utilities (w-16/w-20) added per-field
-// don't collide with w-full (Tailwind resolves conflicts by compiled order,
-// not class-string order). inputClass is the full-width default.
-const fieldBase =
-  'rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
-const inputClass = `${fieldBase} w-full`;
 
 function SectionCard({
   step,
@@ -75,11 +77,16 @@ export function PlannerForm({
   initialRegion?: RegionValue;
 }) {
   const [region, setRegion] = useRegion(initialRegion);
+  const origin = useOrigin();
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<Coords | undefined>();
-  const [drivers, setDrivers] = useState<DriverRow[]>([{ name: '', address: '', capacity: '3' }]);
-  const [passengers, setPassengers] = useState<PassengerRow[]>([{ name: '', address: '' }]);
+  const [drivers, setDrivers] = useState<DriverRow[]>([
+    { id: newRowId(), name: '', address: '', capacity: '3' },
+  ]);
+  const [passengers, setPassengers] = useState<PassengerRow[]>([
+    { id: newRowId(), name: '', address: '' },
+  ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlanResponse | null>(null);
@@ -190,7 +197,7 @@ export function PlannerForm({
               // Mobile: name + seats + remove on one line, address full-width
               // below. Desktop (sm): everything inline via order utilities.
               <div
-                key={i}
+                key={driver.id}
                 className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
               >
                 <input
@@ -198,6 +205,7 @@ export function PlannerForm({
                   onChange={(e) => updateDriver(i, { name: e.target.value })}
                   placeholder="Nombre"
                   required
+                  aria-label="Nombre del conductor"
                   className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
                 />
                 <input
@@ -236,7 +244,10 @@ export function PlannerForm({
           <button
             type="button"
             onClick={() =>
-              setDrivers((rows) => [...rows, { name: '', address: '', capacity: '3' }])
+              setDrivers((rows) => [
+                ...rows,
+                { id: newRowId(), name: '', address: '', capacity: '3' },
+              ])
             }
             disabled={drivers.length >= 10}
             className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
@@ -253,7 +264,7 @@ export function PlannerForm({
           <div className="space-y-2">
             {passengers.map((passenger, i) => (
               <div
-                key={i}
+                key={passenger.id}
                 className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
               >
                 <input
@@ -261,6 +272,7 @@ export function PlannerForm({
                   onChange={(e) => updatePassenger(i, { name: e.target.value })}
                   placeholder="Nombre"
                   required
+                  aria-label="Nombre del pasajero"
                   className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
                 />
                 <button
@@ -289,7 +301,9 @@ export function PlannerForm({
           </div>
           <button
             type="button"
-            onClick={() => setPassengers((rows) => [...rows, { name: '', address: '' }])}
+            onClick={() =>
+              setPassengers((rows) => [...rows, { id: newRowId(), name: '', address: '' }])
+            }
             disabled={passengers.length >= 30 || seatsFull}
             className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
           >
@@ -341,8 +355,8 @@ export function PlannerForm({
             title={title || `Viaje a ${destination}`}
             regionName={region.provinceName}
             shareUrl={
-              result.shareToken && loggedIn && typeof window !== 'undefined'
-                ? `${window.location.origin}/p/${result.shareToken}`
+              result.shareToken && loggedIn && origin
+                ? `${origin}/p/${result.shareToken}`
                 : undefined
             }
           />

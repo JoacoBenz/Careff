@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { CarpoolPlanResult, DriverRoute } from '@/lib/carpool';
 import { computeExpense, formatMoney } from '@/lib/expenses';
+import { useOrigin } from './use-origin';
 
 const km = (meters: number) => `${(meters / 1000).toFixed(1)} km`;
 
@@ -87,15 +88,8 @@ export function PlanResultView({
   const [priceTouched, setPriceTouched] = useState(false);
   // Per-car tolls/extras, keyed by route index.
   const [extras, setExtras] = useState<Record<number, string>>({});
-  // Resolved after mount so the WhatsApp link matches between SSR and client
-  // (reading window.location during render breaks hydration on shared pages).
-  const [origin, setOrigin] = useState('');
-
-  useEffect(() => {
-    // Post-mount sync of a browser-only value; safe and intentional.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (typeof window !== 'undefined') setOrigin(window.location.origin);
-  }, []);
+  // Resolved after mount so the WhatsApp link matches between SSR and client.
+  const origin = useOrigin();
 
   // Pre-fill the fuel price from the Energía open dataset (best-effort).
   useEffect(() => {

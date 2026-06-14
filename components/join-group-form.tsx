@@ -4,11 +4,9 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
-import { RegionSelect } from './region-select';
+import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
-
-const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+import { fieldBase, inputClass } from './form-styles';
 
 export interface JoinFormInitial {
   name?: string;
@@ -21,20 +19,26 @@ export function JoinGroupForm({
   token,
   groupName,
   initial,
+  initialRegion,
 }: {
   token: string;
   groupName: string;
   initial?: JoinFormInitial;
+  initialRegion?: RegionValue;
 }) {
-  const [region, setRegion] = useRegion();
+  const [region, setRegion] = useRegion(initialRegion);
   const [name, setName] = useState(initial?.name ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | undefined>();
   const [hasCar, setHasCar] = useState(initial?.hasCar ?? false);
   const [seats, setSeats] = useState(initial?.seats ? String(initial.seats) : '3');
   const prefilledAddress = Boolean(initial?.address);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
+
+  // Drivers must declare at least one free seat (mirrors the server refine).
+  const seatsInvalid = hasCar && (seats.trim() === '' || Number(seats) < 1);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,6 +54,8 @@ export function JoinGroupForm({
           address,
           hasCar,
           seats: hasCar ? Number(seats) : 0,
+          lat: coords?.lat,
+          lon: coords?.lon,
         }),
       });
       if (!response.ok) {
@@ -114,7 +120,10 @@ export function JoinGroupForm({
         <div className="mt-1">
           <AddressInput
             value={address}
-            onChange={setAddress}
+            onChange={(v, c) => {
+              setAddress(v);
+              setCoords(c);
+            }}
             region={{ country: region.country, provincia: region.provincia }}
             placeholder="Av. Rivadavia 5000, Buenos Aires"
             required
@@ -162,7 +171,7 @@ export function JoinGroupForm({
               value={seats}
               onChange={(e) => setSeats(e.target.value)}
               required
-              className={`mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm`}
+              className={`mt-1 w-24 ${fieldBase}`}
             />
           </label>
         )}
@@ -176,7 +185,7 @@ export function JoinGroupForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || seatsInvalid}
         className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
       >
         {loading ? 'Sumándote…' : 'Sumarme al grupo'}

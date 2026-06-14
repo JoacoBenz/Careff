@@ -7,8 +7,10 @@ import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
 import { PlanResultView, CopyLinkButton } from './plan-result';
 import { RouteLoading } from './route-loading';
-import { RegionSelect } from './region-select';
+import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
+import { useOrigin } from './use-origin';
+import { inputClass } from './form-styles';
 
 export interface GroupMemberView {
   id: number;
@@ -16,10 +18,9 @@ export interface GroupMemberView {
   address: string;
   hasCar: boolean;
   seats: number;
+  lat?: number | null;
+  lon?: number | null;
 }
-
-const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
 
 export function InviteBox({ inviteUrl, groupName }: { inviteUrl: string; groupName: string }) {
   const message = `🚗 Sumate al grupo «${groupName}» en Careff para organizar quién lleva a quién. Decí si tenés auto y desde dónde salís acá: ${inviteUrl}`;
@@ -49,12 +50,22 @@ export function InviteBox({ inviteUrl, groupName }: { inviteUrl: string; groupNa
 export function MemberList({ groupId, members }: { groupId: number; members: GroupMemberView[] }) {
   const router = useRouter();
   const [removing, setRemoving] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function remove(memberId: number) {
     setRemoving(memberId);
+    setError(null);
     try {
-      await fetch(`/api/groups/${groupId}/members/${memberId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/groups/${groupId}/members/${memberId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        setError('No se pudo quitar al integrante. Intentá de nuevo.');
+        return;
+      }
       router.refresh();
+    } catch {
+      setError('No se pudo quitar al integrante. Revisá tu conexión.');
     } finally {
       setRemoving(null);
     }
@@ -69,36 +80,43 @@ export function MemberList({ groupId, members }: { groupId: number; members: Gro
   }
 
   return (
-    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-      {members.map((member) => (
-        <li key={member.id} className="flex items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <p className="font-medium text-slate-900">{member.name}</p>
-            <p className="truncate text-xs text-slate-500">{member.address}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {member.hasCar ? (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                🚗 {member.seats} asiento{member.seats === 1 ? '' : 's'}
-              </span>
-            ) : (
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                🙋 pasajero
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => remove(member.id)}
-              disabled={removing === member.id}
-              className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40"
-              aria-label={`Quitar a ${member.name}`}
-            >
-              ✕
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      {error && (
+        <p className="mb-2 rounded-lg bg-red-50 p-2.5 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+      <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+        {members.map((member) => (
+          <li key={member.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <p className="font-medium text-slate-900">{member.name}</p>
+              <p className="truncate text-xs text-slate-500">{member.address}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {member.hasCar ? (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                  🚗 {member.seats} asiento{member.seats === 1 ? '' : 's'}
+                </span>
+              ) : (
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                  🙋 pasajero
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => remove(member.id)}
+                disabled={removing === member.id}
+                className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40"
+                aria-label={`Quitar a ${member.name}`}
+              >
+                ✕
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -111,11 +129,14 @@ interface PlanResponse {
 export function GroupPlanner({
   groupName,
   members,
+  initialRegion,
 }: {
   groupName: string;
   members: GroupMemberView[];
+  initialRegion?: RegionValue;
 }) {
-  const [region, setRegion] = useRegion();
+  const [region, setRegion] = useRegion(initialRegion);
+  const origin = useOrigin();
   const [destination, setDestination] = useState('');
   const [destinationCoords, setDestinationCoords] = useState<
     { lat: number; lon: number } | undefined
@@ -136,6 +157,14 @@ export function GroupPlanner({
     setError(null);
     setResult(null);
     try {
+      // Reuse the coordinates captured when each member joined, so the server
+      // skips re-geocoding them; add the destination's coords too.
+      const coords: Record<string, { lat: number; lon: number }> = {};
+      for (const m of members) {
+        if (m.lat != null && m.lon != null) coords[m.address] = { lat: m.lat, lon: m.lon };
+      }
+      if (destinationCoords) coords[destination] = destinationCoords;
+
       const response = await fetch('/api/carpool', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +173,7 @@ export function GroupPlanner({
           destination,
           drivers: drivers.map((d) => ({ name: d.name, address: d.address, capacity: d.seats })),
           passengers: passengers.map((p) => ({ name: p.name, address: p.address })),
-          coords: destinationCoords ? { [destination]: destinationCoords } : undefined,
+          coords: Object.keys(coords).length > 0 ? coords : undefined,
           country: region.country,
           provincia: region.provincia,
         }),
@@ -222,11 +251,7 @@ export function GroupPlanner({
             plan={result.plan}
             title={`${groupName} — viaje`}
             regionName={region.provinceName}
-            shareUrl={
-              result.shareToken && typeof window !== 'undefined'
-                ? `${window.location.origin}/p/${result.shareToken}`
-                : undefined
-            }
+            shareUrl={result.shareToken && origin ? `${origin}/p/${result.shareToken}` : undefined}
           />
         </div>
       )}
