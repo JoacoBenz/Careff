@@ -15,6 +15,9 @@ const envSchema = z.object({
   // entries to the dashboard's /api/ingest. The health endpoint needs nothing.
   MISSION_CONTROL_URL: z.string().url().optional(),
   MISSION_CONTROL_API_KEY: z.string().optional(),
+  // Release identifier shipped with error reports for deploy correlation.
+  // Falls back to git SHA env vars, then the package version (see lib/logger.ts).
+  APP_RELEASE: z.string().optional(),
   NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
   OSRM_URL: z.string().url().default('https://router.project-osrm.org'),
   // Argentine government geocoder (free, no key). Primary for AR addresses;

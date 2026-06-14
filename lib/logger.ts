@@ -1,4 +1,5 @@
 import { after } from 'next/server';
+import pkg from '../package.json';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -8,6 +9,18 @@ interface LogEntry {
   event: string;
   timestamp: string;
   [key: string]: unknown;
+}
+
+// Deploy correlation: the release the app is running. Prefers an explicit
+// APP_RELEASE, then a CI-provided git SHA, falling back to the package version
+// so events are always tagged even without extra config.
+function appRelease(): string {
+  return (
+    process.env.APP_RELEASE ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GIT_SHA ||
+    pkg.version
+  );
 }
 
 function formatError(error: unknown): unknown {
@@ -66,6 +79,7 @@ export function logApiError(path: string, method: string, error: unknown): void 
     category: 'api',
     event: 'api_error',
     timestamp: new Date().toISOString(),
+    release: appRelease(),
     path,
     method,
     error: formatError(error),
@@ -80,6 +94,7 @@ export function logSecurityEvent(event: string, details: Record<string, unknown>
     category: 'security',
     event,
     timestamp: new Date().toISOString(),
+    release: appRelease(),
     ...details,
   });
 }
