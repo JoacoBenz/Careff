@@ -45,12 +45,13 @@ export const POST = withOptionalAuth(
       }
 
       let distance;
+      let coordsByAddress;
       try {
-        distance = await buildDistanceFn(
+        ({ distance, coordsByAddress } = await buildDistanceFn(
           [...drivers.map((d) => d.address), ...passengers.map((p) => p.address), destination],
           hints,
           { country: data.country, provincia: data.provincia },
-        );
+        ));
       } catch (error) {
         if (error instanceof AddressNotFoundError) {
           return apiError(
@@ -69,7 +70,7 @@ export const POST = withOptionalAuth(
         throw error;
       }
 
-      const result = planCarpool(drivers, passengers, destination, distance);
+      const result = planCarpool(drivers, passengers, destination, distance, coordsByAddress);
 
       if (!session) {
         return Response.json({ plan: result, saved: false }, { status: 200 });

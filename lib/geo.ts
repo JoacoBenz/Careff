@@ -205,23 +205,35 @@ async function geocode(address: string, region?: Region): Promise<Coordinates> {
   return coords;
 }
 
+/** Driving-distance lookup plus the coordinates resolved for each address. */
+export interface DistanceData {
+  distance: DistanceFn;
+  /** Address -> coordinates, for building precise map links downstream. */
+  coordsByAddress: Map<string, Coordinates>;
+}
+
 /**
  * Geocodes every unique address and fetches a full driving-distance matrix in
  * a single OSRM table call. `hints` supplies coordinates already known from the
  * autocomplete pick (skip geocoding — faster and exact). `region` constrains
  * any address that still needs geocoding to the trip's country / province.
+ *
+ * Returns both the distance function and the resolved coordinates, so callers
+ * can build "lat,lng" map links (which Google Maps resolves reliably) instead
+ * of re-geocoding verbose text addresses.
  */
 export async function buildDistanceFn(
   addresses: string[],
   hints?: Map<string, Coordinates>,
   region?: Region,
-): Promise<DistanceFn> {
+): Promise<DistanceData> {
   const unique = [...new Set(addresses)];
   const coords: Coordinates[] = [];
   for (const address of unique) {
     const hint = hints?.get(address);
     coords.push(hint ?? (await geocode(address, region)));
   }
+  const coordsByAddress = new Map(unique.map((address, i) => [address, coords[i]]));
 
   const pairs = coords.map((c) => `${c.lon},${c.lat}`).join(';');
   const url = `${OSRM_URL}/table/v1/driving/${pairs}?annotations=distance`;
@@ -237,7 +249,7 @@ export async function buildDistanceFn(
   const indexByAddress = new Map(unique.map((address, i) => [address, i]));
   const matrix = data.distances;
 
-  return (from, to) => {
+  const distance: DistanceFn = (from, to) => {
     const i = indexByAddress.get(from);
     const j = indexByAddress.get(to);
     if (i === undefined || j === undefined) {
@@ -245,10 +257,12 @@ export async function buildDistanceFn(
         `Unknown address in distance lookup: ${i === undefined ? from : to}`,
       );
     }
-    const distance = matrix[i][j];
-    if (distance === null || distance === undefined) {
+    const d = matrix[i][j];
+    if (d === null || d === undefined) {
       throw new GeoProviderError(`No driving route between "${from}" and "${to}"`);
     }
-    return distance;
+    return d;
   };
+
+  return { distance, coordsByAddress };
 }

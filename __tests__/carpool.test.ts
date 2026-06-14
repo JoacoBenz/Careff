@@ -149,15 +149,37 @@ describe('planCarpool — multi-driver efficiency', () => {
 });
 
 describe('generateMapUrl', () => {
-  it('builds a Google Maps directions link with encoded waypoints', () => {
+  it('builds a driving directions link with encoded waypoints', () => {
     const url = generateMapUrl(['Calle Falsa 123', 'Av. Siempreviva 742', 'Obelisco']);
     expect(url).toBe(
-      'https://www.google.com/maps/dir/?api=1&origin=Calle%20Falsa%20123&destination=Obelisco&waypoints=Av.%20Siempreviva%20742',
+      'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=Calle%20Falsa%20123&destination=Obelisco&waypoints=Av.%20Siempreviva%20742',
     );
   });
 
   it('omits the waypoints parameter for direct routes', () => {
     const url = generateMapUrl(['A', 'B']);
-    expect(url).toBe('https://www.google.com/maps/dir/?api=1&origin=A&destination=B');
+    expect(url).toBe(
+      'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=A&destination=B',
+    );
+  });
+
+  it('uses lat,lng coordinates when available (reliable + short)', () => {
+    const coords = new Map([
+      ['driver-home', { lat: -34.6037389, lon: -58.3815704 }],
+      ['pickup', { lat: -34.6, lon: -58.4 }],
+      ['Delta, Vivanco, Tigre', { lat: -34.4264, lon: -58.5797 }],
+    ]);
+    const url = generateMapUrl(['driver-home', 'pickup', 'Delta, Vivanco, Tigre'], coords);
+    expect(url).toBe(
+      'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=-34.60374,-58.38157&destination=-34.4264,-58.5797&waypoints=-34.6,-58.4',
+    );
+  });
+
+  it('falls back to the text address when a point has no coordinates', () => {
+    const coords = new Map([['A', { lat: -34.6, lon: -58.4 }]]);
+    const url = generateMapUrl(['A', 'Some Place, City'], coords);
+    expect(url).toBe(
+      'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=-34.6,-58.4&destination=Some%20Place%2C%20City',
+    );
   });
 });

@@ -23,6 +23,12 @@ export interface PassengerInput {
 /** Driving distance in meters between two known addresses. */
 export type DistanceFn = (from: string, to: string) => number;
 
+/** Coordinates of an address, used to build precise map links. */
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
 /**
  * Appends the trip's city to a hand-typed address so it geocodes, but leaves
  * the address alone when it already mentions the city or is a canonical
@@ -63,12 +69,27 @@ export interface CarpoolPlanResult {
   totalDistanceMeters: number;
 }
 
-/** Google Maps directions deep link for a route (no API key required). */
-export function generateMapUrl(route: string[]): string {
-  const origin = encodeURIComponent(route[0]);
-  const destination = encodeURIComponent(route[route.length - 1]);
-  const waypoints = route.slice(1, -1).map(encodeURIComponent).join('|');
-  const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+/** ~1 m precision — keeps the link short without losing the pickup point. */
+const roundCoord = (n: number): number => Math.round(n * 1e5) / 1e5;
+
+/**
+ * Google Maps directions deep link for a route (no API key required).
+ *
+ * Prefers coordinates when available: verbose text like "Comuna 4, Ciudad
+ * Autónoma de Buenos Aires" often fails to geocode in Google Maps ("no se
+ * encuentra ese lugar") and bloats the URL, whereas "lat,lng" always resolves
+ * and stays short. `travelmode=driving` forces the car route instead of
+ * whatever mode the user last had open (e.g. public transit).
+ */
+export function generateMapUrl(route: string[], coords?: Map<string, LatLon>): string {
+  const point = (address: string): string => {
+    const c = coords?.get(address);
+    return c ? `${roundCoord(c.lat)},${roundCoord(c.lon)}` : encodeURIComponent(address);
+  };
+  const origin = point(route[0]);
+  const destination = point(route[route.length - 1]);
+  const waypoints = route.slice(1, -1).map(point).join('|');
+  const url = `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${origin}&destination=${destination}`;
   return waypoints ? `${url}&waypoints=${waypoints}` : url;
 }
 
@@ -92,6 +113,7 @@ export function planCarpool(
   passengers: PassengerInput[],
   destination: string,
   distance: DistanceFn,
+  coords?: Map<string, LatLon>,
 ): CarpoolPlanResult {
   const seatsLeft = new Map(drivers.map((d) => [d.name, d.capacity]));
   const stopsByDriver = new Map<string, RouteStop[]>(drivers.map((d) => [d.name, []]));
@@ -147,7 +169,7 @@ export function planCarpool(
       stops,
       addresses,
       distanceMeters: routeDistance(addresses, distance),
-      mapUrl: generateMapUrl(addresses),
+      mapUrl: generateMapUrl(addresses, coords),
     };
   });
 
