@@ -66,6 +66,9 @@ const roundCoord = (n: number): number => Math.round(n * 1e5) / 1e5;
  * whatever mode the user last had open (e.g. public transit).
  */
 export function generateMapUrl(route: string[], coords?: Map<string, LatLon>): string {
+  // A real route is always [origin, ...stops, destination]; guard the helper
+  // so a degenerate call can't emit "origin=undefined".
+  if (route.length < 2) return '';
   const point = (address: string): string => {
     const c = coords?.get(address);
     return c ? `${roundCoord(c.lat)},${roundCoord(c.lon)}` : encodeURIComponent(address);

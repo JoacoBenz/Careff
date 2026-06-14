@@ -124,7 +124,11 @@ export function RegionSelect({
           ))}
         </select>
       )}
-      {autoNote && <p className="w-full text-xs text-emerald-700">{autoNote}</p>}
+      {autoNote && (
+        <p className="w-full text-xs text-emerald-700" role="status" aria-live="polite">
+          {autoNote}
+        </p>
+      )}
     </div>
   );
 }

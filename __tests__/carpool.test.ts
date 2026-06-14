@@ -140,6 +140,11 @@ describe('generateMapUrl', () => {
     );
   });
 
+  it('returns an empty string for a degenerate (<2 point) route', () => {
+    expect(generateMapUrl([])).toBe('');
+    expect(generateMapUrl(['only-one'])).toBe('');
+  });
+
   it('uses lat,lng coordinates when available (reliable + short)', () => {
     const coords = new Map([
       ['driver-home', { lat: -34.6037389, lon: -58.3815704 }],

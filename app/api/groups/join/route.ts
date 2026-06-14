@@ -40,19 +40,22 @@ export const POST = withOptionalAuth(
         return apiError('GROUP_FULL', 'El grupo ya alcanzó el máximo de integrantes.', 422);
       }
 
+      // Only overwrite stored coordinates when this submission actually carries
+      // them (autocomplete pick), so a manual re-type doesn't wipe a good pin.
+      const coordsPatch =
+        data.lat != null && data.lon != null ? { lat: data.lat, lon: data.lon } : {};
       const member = await prisma.groupMember.upsert({
         where: {
           groupId_name_address: { groupId: group.id, name: data.name, address: data.address },
         },
-        update: { hasCar: data.hasCar, seats, lat: data.lat, lon: data.lon },
+        update: { hasCar: data.hasCar, seats, ...coordsPatch },
         create: {
           groupId: group.id,
           name: data.name,
           address: data.address,
           hasCar: data.hasCar,
           seats,
-          lat: data.lat,
-          lon: data.lon,
+          ...coordsPatch,
         },
       });
 
