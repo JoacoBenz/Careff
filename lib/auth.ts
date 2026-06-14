@@ -3,6 +3,10 @@ import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
+// A valid bcrypt hash of a random string, compared against when the email isn't
+// found, to equalize login timing (mitigates account enumeration).
+const DUMMY_PASSWORD_HASH = '$2b$10$BNBgdme7OvXJHECmakC4pu0Pq4cpaQk21evpL0lFdjx2TZ8LM2x5.';
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
@@ -47,10 +51,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!email || !password) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
-
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        // Always run bcrypt.compare (against a dummy hash when the user is
+        // absent) so response time doesn't leak whether the email exists.
+        const hash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
+        const valid = await bcrypt.compare(password, hash);
+        if (!user || !valid) return null;
 
         return { id: String(user.id), email: user.email, name: user.name };
       },

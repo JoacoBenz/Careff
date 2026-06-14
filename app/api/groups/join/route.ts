@@ -59,7 +59,7 @@ export const POST = withOptionalAuth(
               seats: data.hasCar ? data.seats : 0,
             }),
           ),
-          { maxAge: 60 * 60 * 24 * 365, path: '/', sameSite: 'lax' },
+          { maxAge: 60 * 60 * 24 * 365, path: '/', sameSite: 'lax', httpOnly: true },
         );
       }
 

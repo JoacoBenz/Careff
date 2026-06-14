@@ -9,6 +9,9 @@ import { env } from './env';
 
 const ENERGIA_API_URL = env.ENERGIA_API_URL ?? 'https://datos.energia.gob.ar/api/3/action';
 const RESOURCE = env.ENERGIA_FUEL_RESOURCE ?? '';
+// CKAN resource ids are UUIDs; refuse anything else so a misconfigured env can
+// never break out of the quoted table identifier in the dataset query.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface FuelPriceSuggestion {
   price: number;
@@ -16,16 +19,21 @@ export interface FuelPriceSuggestion {
 }
 
 // Cache suggestions for an hour (price barely moves day to day, and it keeps us
-// light on the public dataset). Keyed by province.
+// light on the public dataset). Null (no data / outage) is cached only briefly
+// so a transient failure doesn't suppress retries for a full hour. Keyed by
+// province + resource id (so changing the resource invalidates stale entries).
 const cache = new Map<string, { value: FuelPriceSuggestion | null; at: number }>();
 const TTL_MS = 60 * 60 * 1000;
+const NEG_TTL_MS = 5 * 60 * 1000;
 
 export async function suggestFuelPrice(provinceName?: string): Promise<FuelPriceSuggestion | null> {
-  if (!RESOURCE) return null;
-  const key = provinceName?.toLowerCase() ?? '';
+  if (!RESOURCE || !UUID_RE.test(RESOURCE)) return null;
+  const key = `${RESOURCE}|${provinceName?.toLowerCase() ?? ''}`;
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
+  if (hit && Date.now() - hit.at < (hit.value === null ? NEG_TTL_MS : TTL_MS)) return hit.value;
 
+  // provinceName is charset-validated upstream (fuelPriceQuerySchema); the
+  // quote-doubling is belt-and-suspenders for the dataset string literal.
   const provFilter = provinceName
     ? ` AND provincia ILIKE '%${provinceName.replace(/'/g, "''")}%'`
     : '';

@@ -137,9 +137,15 @@ async function nominatimSearch(
   const suggestions: AddressSuggestion[] = [];
   for (const r of results) {
     const label = r.display_name ?? '';
-    if (label.length === 0 || seen.has(label)) continue;
+    const lat = Number(r.lat);
+    const lon = Number(r.lon);
+    // Guard against malformed coords (parity with the Georef branch): a NaN
+    // would otherwise silently poison the OSRM distance matrix.
+    if (label.length === 0 || seen.has(label) || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+      continue;
+    }
     seen.add(label);
-    suggestions.push({ label, lat: Number(r.lat), lon: Number(r.lon) });
+    suggestions.push({ label, lat, lon });
   }
   return suggestions;
 }

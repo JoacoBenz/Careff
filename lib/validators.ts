@@ -66,6 +66,21 @@ export const geoSearchSchema = z.object({
   prov: z.string().max(40).optional(),
 });
 
+export const geoReverseSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+});
+
+// Province *name* (not Georef id) used to scope the fuel-price suggestion.
+// Restricting the charset is defense-in-depth for lib/fuel.ts's dataset query.
+export const fuelPriceQuerySchema = z.object({
+  prov: z
+    .string()
+    .max(60)
+    .regex(/^[\p{L}\p{M}\s.-]+$/u, 'provincia inválida')
+    .optional(),
+});
+
 // Region defaults a registered user can save to their profile.
 export const profileRegionSchema = z.object({
   country: z.string().max(2).optional(),
