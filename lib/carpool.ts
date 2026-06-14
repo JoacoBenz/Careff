@@ -29,22 +29,6 @@ export interface LatLon {
   lon: number;
 }
 
-/**
- * Appends the trip's city to a hand-typed address so it geocodes, but leaves
- * the address alone when it already mentions the city or is a canonical
- * geocoder result (picked from autocomplete — those always carry several
- * comma-separated parts and re-appending the city breaks geocoding).
- */
-export function withCity(address: string, city?: string): string {
-  if (!city) return address;
-  const trimmedCity = city.trim();
-  if (trimmedCity.length === 0) return address;
-  const isCanonical = address.split(',').length >= 4;
-  const mentionsCity = address.toLowerCase().includes(trimmedCity.toLowerCase());
-  if (isCanonical || mentionsCity) return address;
-  return `${address}, ${trimmedCity}`;
-}
-
 export interface RouteStop {
   name: string;
   address: string;

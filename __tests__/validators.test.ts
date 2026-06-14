@@ -46,7 +46,6 @@ describe('carpoolPlanSchema', () => {
       drivers: [{ ...validPlan.drivers[0], capacity: '3' }],
     });
     expect(result.drivers[0].capacity).toBe(3);
-    expect(result.city).toBeUndefined();
   });
 
   it('rejects plans without drivers', () => {

@@ -8,7 +8,7 @@ import {
 import { createWithUniqueToken } from '@/lib/tokens';
 import { prisma } from '@/lib/prisma';
 import { carpoolPlanSchema, type CarpoolPlanInput } from '@/lib/validators';
-import { planCarpool, withCity } from '@/lib/carpool';
+import { planCarpool } from '@/lib/carpool';
 import { buildDistanceFn, AddressNotFoundError, GeoProviderError } from '@/lib/geo';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import type { Prisma } from '@/generated/prisma/client';
@@ -24,12 +24,7 @@ export const POST = withOptionalAuth(
       const limited = enforceRateLimit(request, 'carpool', { limit: 30, windowMs: 600_000 });
       if (limited) return limited;
 
-      const destination = withCity(data.destination, data.city);
-      const drivers = data.drivers.map((d) => ({ ...d, address: withCity(d.address, data.city) }));
-      const passengers = data.passengers.map((p) => ({
-        ...p,
-        address: withCity(p.address, data.city),
-      }));
+      const { destination, drivers, passengers } = data;
 
       const totalCapacity = drivers.reduce((sum, d) => sum + d.capacity, 0);
       if (passengers.length > totalCapacity) {
@@ -46,7 +41,7 @@ export const POST = withOptionalAuth(
       const hints = new Map<string, { lat: number; lon: number }>();
       if (data.coords) {
         for (const [address, c] of Object.entries(data.coords)) {
-          hints.set(withCity(address, data.city), c);
+          hints.set(address, c);
         }
       }
 

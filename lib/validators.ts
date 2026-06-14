@@ -28,7 +28,6 @@ const addressSchema = z.string().min(3).max(200);
 // limits of the free geocoding/routing providers (see lib/geo.ts).
 export const carpoolPlanSchema = z.object({
   title: z.string().min(1).max(120),
-  city: z.string().max(120).optional(),
   destination: addressSchema,
   drivers: z
     .array(

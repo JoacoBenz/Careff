@@ -1,28 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planCarpool, generateMapUrl, withCity, type DistanceFn } from '@/lib/carpool';
-
-describe('withCity', () => {
-  it('appends the city to short hand-typed addresses', () => {
-    expect(withCity('Senillosa 200', 'Buenos Aires')).toBe('Senillosa 200, Buenos Aires');
-  });
-
-  it('leaves canonical autocomplete addresses untouched', () => {
-    const canonical =
-      'Doctor Enrique Finochietto 990, Parque Patricios, Buenos Aires, Comuna 4, Ciudad Autónoma de Buenos Aires, C1264AAN, Argentina';
-    expect(withCity(canonical, 'Buenos Aires, Argentina')).toBe(canonical);
-  });
-
-  it('does not duplicate a city the address already mentions', () => {
-    expect(withCity('Av. Corrientes 1234, buenos aires', 'Buenos Aires')).toBe(
-      'Av. Corrientes 1234, buenos aires',
-    );
-  });
-
-  it('ignores empty or blank city values', () => {
-    expect(withCity('Senillosa 200')).toBe('Senillosa 200');
-    expect(withCity('Senillosa 200', '   ')).toBe('Senillosa 200');
-  });
-});
+import { planCarpool, generateMapUrl, type DistanceFn } from '@/lib/carpool';
 
 /**
  * Synthetic geography: addresses are points on a line, distance is the
