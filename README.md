@@ -13,6 +13,18 @@ only needed to save), **address autocomplete** while typing, **per-driver WhatsA
 share** with the route prefilled, and **public share links** (`/p/<token>`) so the
 whole group can see the plan.
 
+## Launch polish (v1.0)
+
+- **WhatsApp/social link previews**: site-wide OpenGraph/Twitter cards with a
+  branded image generated at request time (`app/opengraph-image.tsx`), and
+  **per-plan cards** on share links — `/p/<token>` previews show the plan title
+  and destination.
+- **SEO hygiene**: `robots.txt` indexes only `/`, `/planner`, `/login`,
+  `/register`; secret-token pages (`/p/`, `/join/`) and the API are excluded,
+  plus `sitemap.xml` for the public pages.
+- **Brand favicon** (`app/icon.svg`) and a **web manifest** (add to home screen
+  with dark splash), themed **404** page.
+
 ## Why it's free to run
 
 - **Geocoding**: [Georef](https://datosgobar.github.io/georef-api-docs/) (Argentine
@@ -60,7 +72,9 @@ npm run dev
 1. Create a free PostgreSQL database (Neon or Supabase) and copy the connection string.
 2. Import the repo in Vercel; set `DATABASE_URL`, `NEXTAUTH_URL` (your deployment URL)
    and `NEXTAUTH_SECRET` (`openssl rand -base64 32`).
-3. Run `npx prisma migrate deploy` against the database.
+3. Set `NEXT_PUBLIC_APP_URL` to the same deployment URL — it drives the OpenGraph
+   previews (WhatsApp link cards), `sitemap.xml` and `robots.txt`.
+4. Run `npx prisma migrate deploy` against the database.
 
 ## Scripts
 

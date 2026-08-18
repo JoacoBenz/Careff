@@ -1,11 +1,39 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { CityPulse } from '@/components/city-pulse';
 import './globals.css';
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const title = 'Careff — ¿Quién lleva a quién? Resuelto en un minuto';
+const description =
+  'Organizá viajes compartidos gratis: Careff asigna cada pasajero al auto más cercano, arma la ruta de cada conductor y la comparte por WhatsApp.';
+
 export const metadata: Metadata = {
-  title: 'Careff — ¿Quién lleva a quién? Resuelto en un minuto',
-  description:
-    'Organizá viajes compartidos gratis: Careff asigna cada pasajero al auto más cercano, arma la ruta de cada conductor y la comparte por WhatsApp.',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: title,
+    template: '%s · Careff',
+  },
+  description,
+  applicationName: 'Careff',
+  // OG/Twitter defaults: WhatsApp and social link previews for every page;
+  // the image comes from app/opengraph-image.tsx.
+  openGraph: {
+    title,
+    description,
+    url: appUrl,
+    siteName: 'Careff',
+    type: 'website',
+    locale: 'es_AR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#030712',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
