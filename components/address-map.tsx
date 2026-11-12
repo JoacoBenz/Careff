@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { fitView, tilesFor, toScreen } from '@/lib/tile-map';
-import { PinIcon } from './icons';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  fitView,
+  panView,
+  tilesFor,
+  toScreen,
+  zoomView,
+  type MapView,
+} from '@/lib/tile-map';
+import { CloseIcon, PinIcon, PlusIcon } from './icons';
 
 // OpenStreetMap's standard tiles: free, no API key. Their usage policy asks
 // for visible attribution (rendered below) and light traffic — one small map
@@ -27,19 +36,23 @@ const PIN_STYLE: Record<MapPin['kind'], string> = {
  * One shared preview map for a whole form: every address picked from the
  * autocomplete shows up as a pin so people can check it landed in the right
  * place. `focusId` zooms to a single pin (the address just chosen); without
- * it the map fits them all. Static on purpose — no pan/zoom library; the
- * question it answers is "is this roughly where I meant?".
+ * it the map fits them all. People can drag to look around and zoom with the
+ * +/− buttons or a double-click, to check the surrounding streets. Hand-rolled
+ * (lib/tile-map.ts) instead of a map library: it only needs pan + zoom.
  */
 export function AddressMap({
   pins,
   focusId,
   onShowAll,
+  onClose,
   height = 200,
   emptyHint = 'Elegí una dirección de la lista y la vas a ver acá para confirmarla.',
 }: {
   pins: MapPin[];
   focusId?: string | null;
   onShowAll?: () => void;
+  /** Renders a close button (used by the inline map on phones). */
+  onClose?: () => void;
   height?: number;
   emptyHint?: string;
 }) {
@@ -60,15 +73,58 @@ export function AddressMap({
   }, []);
 
   const focused = focusId ? pins.find((p) => p.id === focusId) : undefined;
-  const view = fitView(focused ? [focused] : pins, width, height);
+  const fitted = fitView(focused ? [focused] : pins, width, height);
+
+  // Manual pan/zoom is kept only while the pins and focus stay the same:
+  // picking another address re-frames the map on it.
+  const frameKey = `${focusId ?? '*'}|${pins.map((p) => `${p.id}:${p.lat},${p.lon}`).join(';')}|${width}`;
+  const [manual, setManual] = useState<{ key: string; view: MapView } | null>(null);
+  const view = manual?.key === frameKey ? manual.view : fitted;
   const tiles = width > 0 && pins.length > 0 ? tilesFor(view, width, height, TILE_URL) : [];
+
+  const drag = useRef<{ id: number; x: number; y: number; start: MapView } | null>(null);
+  const setView = (next: MapView) => setManual({ key: frameKey, view: next });
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest('button, a')) return;
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, start: view };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const d = drag.current;
+    if (!d || d.id !== event.pointerId) return;
+    setView(panView(d.start, event.clientX - d.x, event.clientY - d.y));
+  }
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id === event.pointerId) drag.current = null;
+  }
+  const zoomBy = (delta: number) =>
+    setView(zoomView(view, delta, { x: width / 2, y: height / 2 }, width, height));
+  const moved = manual?.key === frameKey;
 
   return (
     <div>
       <div
         ref={boxRef}
-        className="surface-inset relative overflow-hidden"
+        className={`surface-inset relative overflow-hidden ${pins.length > 0 ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
         style={{ height }}
+        onPointerDown={pins.length > 0 ? onPointerDown : undefined}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onDoubleClick={(event) => {
+          if (pins.length === 0) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          setView(
+            zoomView(
+              view,
+              1,
+              { x: event.clientX - rect.left, y: event.clientY - rect.top },
+              width,
+              height,
+            ),
+          );
+        }}
         role="img"
         aria-label={
           pins.length > 0
@@ -139,21 +195,63 @@ export function AddressMap({
                   </span>
                 );
               })}
-            {focused && onShowAll && pins.length > 1 && (
+            <div className="absolute left-2 top-2 z-10 flex gap-1.5">
+              {focused && onShowAll && pins.length > 1 && (
+                <button
+                  type="button"
+                  onClick={onShowAll}
+                  className="rounded-lg bg-[#030712]/85 px-2 py-1 text-[11px] font-medium text-amber-300 ring-1 ring-[var(--line-strong)] hover:bg-[#030712]"
+                >
+                  Ver todos
+                </button>
+              )}
+              {moved && (
+                <button
+                  type="button"
+                  onClick={() => setManual(null)}
+                  className="rounded-lg bg-[#030712]/85 px-2 py-1 text-[11px] font-medium text-amber-300 ring-1 ring-[var(--line-strong)] hover:bg-[#030712]"
+                >
+                  Centrar
+                </button>
+              )}
+            </div>
+            {onClose && (
               <button
                 type="button"
-                onClick={onShowAll}
-                className="absolute right-2 top-2 z-10 rounded-lg bg-[#030712]/85 px-2 py-1 text-[11px] font-medium text-amber-300 ring-1 ring-[var(--line-strong)] hover:bg-[#030712]"
+                onClick={onClose}
+                aria-label="Cerrar mapa"
+                className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-[#030712]/85 text-white ring-1 ring-[var(--line-strong)] hover:bg-[#030712]"
               >
-                Ver todos
+                <CloseIcon className="h-3.5 w-3.5" />
               </button>
             )}
+            <div className="absolute bottom-2 right-2 z-10 flex flex-col overflow-hidden rounded-lg bg-[#030712]/85 ring-1 ring-[var(--line-strong)]">
+              <button
+                type="button"
+                onClick={() => zoomBy(1)}
+                disabled={view.zoom >= MAX_ZOOM}
+                aria-label="Acercar"
+                className="flex h-8 w-8 items-center justify-center text-white hover:bg-white/10 disabled:opacity-30"
+              >
+                <PlusIcon className="h-4 w-4" />
+              </button>
+              <span className="h-px bg-[var(--line-strong)]" aria-hidden />
+              <button
+                type="button"
+                onClick={() => zoomBy(-1)}
+                disabled={view.zoom <= MIN_ZOOM}
+                aria-label="Alejar"
+                className="flex h-8 w-8 items-center justify-center text-white hover:bg-white/10 disabled:opacity-30"
+              >
+                <span className="block h-[2px] w-3.5 rounded bg-current" aria-hidden />
+              </button>
+            </div>
           </>
         )}
       </div>
       {pins.length > 0 && (
         <p className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-[var(--ink-faint)]">
-          <span>Ubicación aproximada — confirmá que sea la zona correcta.</span>
+          <span>Arrastrá para recorrer · +/− para zoom. Ubicación aproximada.</span>
           <a
             href="https://www.openstreetmap.org/copyright"
             target="_blank"

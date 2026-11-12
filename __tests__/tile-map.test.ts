@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { TILE_SIZE, fitView, project, tilesFor, toScreen } from '@/lib/tile-map';
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  TILE_SIZE,
+  fitView,
+  panView,
+  project,
+  tilesFor,
+  toScreen,
+  zoomView,
+} from '@/lib/tile-map';
 
 const OBELISCO = { lat: -34.6037, lon: -58.3816 };
 const PILAR = { lat: -34.4587, lon: -58.9142 };
@@ -76,5 +86,37 @@ describe('tilesFor', () => {
     const tiles = tilesFor(view, 300, 200, URL);
     expect(tiles.length).toBeGreaterThan(0);
     for (const t of tiles) expect(t.url).toMatch(/\/1\/[01]\/[01]\.png$/);
+  });
+});
+
+describe('zoomView / panView', () => {
+  const base = fitView([OBELISCO], 300, 200);
+
+  it('zooming at the center keeps the center point fixed', () => {
+    const z = zoomView(base, 1, { x: 150, y: 100 }, 300, 200);
+    expect(z.zoom).toBe(base.zoom + 1);
+    expect(toScreen(OBELISCO, z, 300, 200)).toEqual({ x: 150, y: 100 });
+  });
+
+  it('zooming at a corner keeps that corner point under the cursor', () => {
+    const anchor = { x: 40, y: 30 };
+    const before = { x: base.center.x + (40 - 150), y: base.center.y + (30 - 100) };
+    const z = zoomView(base, -1, anchor, 300, 200);
+    const after = { x: z.center.x + (40 - 150), y: z.center.y + (30 - 100) };
+    expect(after.x).toBeCloseTo(before.x / 2);
+    expect(after.y).toBeCloseTo(before.y / 2);
+  });
+
+  it('clamps to the zoom range', () => {
+    expect(zoomView({ ...base, zoom: MAX_ZOOM }, 1, { x: 0, y: 0 }, 300, 200).zoom).toBe(MAX_ZOOM);
+    expect(zoomView({ ...base, zoom: MIN_ZOOM }, -1, { x: 0, y: 0 }, 300, 200).zoom).toBe(MIN_ZOOM);
+  });
+
+  it('panning moves content with the pointer', () => {
+    const moved = panView(base, 20, -10);
+    const before = toScreen(OBELISCO, base, 300, 200);
+    const after = toScreen(OBELISCO, moved, 300, 200);
+    expect(after.x - before.x).toBeCloseTo(20);
+    expect(after.y - before.y).toBeCloseTo(-10);
   });
 });

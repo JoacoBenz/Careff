@@ -119,6 +119,10 @@ export function PlannerForm({
   // Which pin the preview map zooms to (the address just picked or focused);
   // null shows every located address at once.
   const [mapFocus, setMapFocus] = useState<string | null>(null);
+  // Phones: which field the inline map is open under (the side panel with
+  // the big map is desktop-only). Separate from mapFocus so "Ver todos"
+  // doesn't close it.
+  const [inlineFor, setInlineFor] = useState<string | null>(null);
 
   // The result renders below a long form: bring it into view when it lands.
   useEffect(() => {
@@ -188,9 +192,29 @@ export function PlannerForm({
     }
   }
   const addressCount = 1 + drivers.length + passengers.length;
+
+  /** Points the maps at a located address and opens the inline one there. */
+  function showOnMap(id: string | null) {
+    setMapFocus(id);
+    setInlineFor(id);
+  }
+
+  // Phones only: the map opens right under the field being confirmed.
+  const inlineMap = (id: string) =>
+    inlineFor === id && pins.length > 0 ? (
+      <div className="rise mt-2 lg:hidden">
+        <AddressMap
+          pins={pins}
+          focusId={mapFocus}
+          onShowAll={() => setMapFocus(null)}
+          onClose={() => setInlineFor(null)}
+          height={240}
+        />
+      </div>
+    ) : null;
   const previewMap = (
     <>
-      <AddressMap pins={pins} focusId={mapFocus} onShowAll={() => setMapFocus(null)} />
+      <AddressMap pins={pins} focusId={mapFocus} onShowAll={() => setMapFocus(null)} height={280} />
       {pins.length > 0 && pins.length < addressCount && (
         <p className="mt-1 text-[10px] text-[var(--ink-faint)]">
           {pins.length} de {addressCount} direcciones ubicadas. Las que escribas sin elegir de la
@@ -208,7 +232,7 @@ export function PlannerForm({
   return (
     <div className="space-y-8">
       {loading && <RouteLoading />}
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <form id="planner-form" onSubmit={onSubmit} className="space-y-4">
           <SectionCard step="1" title="El viaje" hint="Un nombre para reconocerlo y dónde termina.">
             <label className="block">
@@ -231,16 +255,17 @@ export function PlannerForm({
                 onChange={(v, c) => {
                   setDestination(v);
                   setDestinationCoords(c);
-                  setMapFocus(c ? 'dest' : null);
+                  showOnMap(c ? 'dest' : null);
                 }}
                 located={Boolean(destinationCoords)}
-                onFieldFocus={() => destinationCoords && setMapFocus('dest')}
+                onFieldFocus={() => destinationCoords && showOnMap('dest')}
                 region={{ country: region.country, provincia: region.provincia }}
                 placeholder="Av. Corrientes 1234, Buenos Aires"
                 required
                 className={inputClass}
               />
             </label>
+            {inlineMap('dest')}
           </SectionCard>
 
           <SectionCard
@@ -289,15 +314,16 @@ export function PlannerForm({
                       value={driver.address}
                       onChange={(v, c) => {
                         updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon });
-                        setMapFocus(c ? driver.id : null);
+                        showOnMap(c ? driver.id : null);
                       }}
                       located={driver.lat != null}
-                      onFieldFocus={() => driver.lat != null && setMapFocus(driver.id)}
+                      onFieldFocus={() => driver.lat != null && showOnMap(driver.id)}
                       region={{ country: region.country, provincia: region.provincia }}
                       placeholder="Dirección de salida"
                       required
                       className={inputClass}
                     />
+                    {inlineMap(driver.id)}
                   </div>
                 </div>
               ))}
@@ -348,15 +374,16 @@ export function PlannerForm({
                       value={passenger.address}
                       onChange={(v, c) => {
                         updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon });
-                        setMapFocus(c ? passenger.id : null);
+                        showOnMap(c ? passenger.id : null);
                       }}
                       located={passenger.lat != null}
-                      onFieldFocus={() => passenger.lat != null && setMapFocus(passenger.id)}
+                      onFieldFocus={() => passenger.lat != null && showOnMap(passenger.id)}
                       region={{ country: region.country, provincia: region.provincia }}
                       placeholder="Dirección donde lo buscan"
                       required
                       className={inputClass}
                     />
+                    {inlineMap(passenger.id)}
                   </div>
                 </div>
               ))}
@@ -392,12 +419,8 @@ export function PlannerForm({
             </p>
           )}
 
-          {/* Phones/tablets: the summary column is hidden, so the map and the
-              action live here. */}
-          <div className="surface p-4 lg:hidden">
-            <p className="eyebrow mb-2">Mapa de direcciones</p>
-            {previewMap}
-          </div>
+          {/* Phones/tablets: the summary column is hidden, so the action lives
+              here (the map opens inline under each located address). */}
           <button
             type="submit"
             disabled={loading || overCapacity}

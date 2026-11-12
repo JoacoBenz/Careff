@@ -108,3 +108,36 @@ export function tilesFor(
   }
   return tiles;
 }
+
+export const MIN_ZOOM = 3;
+export const MAX_ZOOM = 18;
+
+/**
+ * Zoom by `delta` levels keeping the world point under `anchor` (viewport
+ * pixels) fixed on screen — the anchor is the viewport center for the +/−
+ * buttons and the cursor for double-click. Clamped to the tiled range.
+ */
+export function zoomView(
+  view: MapView,
+  delta: number,
+  anchor: XY,
+  width: number,
+  height: number,
+): MapView {
+  const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.zoom + delta));
+  if (zoom === view.zoom) return view;
+  const factor = 2 ** (zoom - view.zoom);
+  // World point currently under the anchor…
+  const wx = view.center.x + (anchor.x - width / 2);
+  const wy = view.center.y + (anchor.y - height / 2);
+  // …stays under it after scaling the world.
+  return {
+    zoom,
+    center: { x: wx * factor - (anchor.x - width / 2), y: wy * factor - (anchor.y - height / 2) },
+  };
+}
+
+/** Moves the view by a screen-pixel drag (content follows the pointer). */
+export function panView(view: MapView, dx: number, dy: number): MapView {
+  return { zoom: view.zoom, center: { x: view.center.x - dx, y: view.center.y - dy } };
+}
