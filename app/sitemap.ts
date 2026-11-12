@@ -7,5 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${appUrl}/planner`, changeFrequency: 'monthly' as const, priority: 0.9 },
     { url: `${appUrl}/register`, changeFrequency: 'monthly' as const, priority: 0.6 },
     { url: `${appUrl}/login`, changeFrequency: 'monthly' as const, priority: 0.4 },
+    { url: `${appUrl}/privacy`, changeFrequency: 'yearly' as const, priority: 0.2 },
+    { url: `${appUrl}/terms`, changeFrequency: 'yearly' as const, priority: 0.2 },
   ];
 }

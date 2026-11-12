@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { loginUrl } from '@/lib/safe-redirect';
 import { prisma } from '@/lib/prisma';
 import { idSchema } from '@/lib/validators';
 import { SiteHeader } from '@/components/site-header';
@@ -10,9 +11,9 @@ import { InviteBox, MemberList, GroupPlanner } from '@/components/group-detail';
 
 export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user) redirect('/login');
-
   const { id } = await params;
+  if (!session?.user) redirect(loginUrl(`/groups/${encodeURIComponent(id)}`));
+
   const groupId = idSchema.safeParse(id);
   if (!groupId.success) notFound();
 

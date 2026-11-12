@@ -38,7 +38,7 @@
 - **New endpoint**: `app/api/<route>/route.ts` using `withAuth`; add schema to
   `lib/validators.ts`; add a test in `__tests__/api/`. Working examples:
   `app/api/me/route.ts` (protected), `app/api/auth/register/route.ts` (public).
-- **New page**: server component by default; `app/(auth)/login/page.tsx` shows the
-  client-component pattern.
+- **New page**: server component by default; `app/(auth)/login/page.tsx` +
+  `components/login-form.tsx` show the server-page / client-form split.
 - **New model**: edit `prisma/schema.prisma`, `npm run db:migrate -- --name <desc>`.
 - **New test**: `__tests__/<name>.test.ts` following existing patterns.

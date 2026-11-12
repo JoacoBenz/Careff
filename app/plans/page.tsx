@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { loginUrl } from '@/lib/safe-redirect';
 import { prisma } from '@/lib/prisma';
 import { PlanResultView } from '@/components/plan-result';
 import { SiteHeader } from '@/components/site-header';
@@ -18,7 +19,7 @@ import type { CarpoolPlanResult } from '@/lib/carpool';
 
 export default async function PlansPage() {
   const session = await auth();
-  if (!session?.user) redirect('/login');
+  if (!session?.user) redirect(loginUrl('/plans'));
 
   const requestHeaders = await headers();
   const host = requestHeaders.get('host') ?? 'localhost:3000';

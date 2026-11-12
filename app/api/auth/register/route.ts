@@ -8,6 +8,8 @@ import {
   type OptionalAuthContext,
 } from '@/lib/api-handler';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { sendVerificationEmail } from '@/lib/account-emails';
+import { logApiError } from '@/lib/logger';
 
 // Public endpoint: creates an account. Composes the standard wrappers
 // (withOptionalAuth + withValidation) for uniform JSON parsing, validation and
@@ -25,6 +27,13 @@ export const POST = withOptionalAuth(
     const user = await prisma.user.create({
       data: { email, name, passwordHash: await bcrypt.hash(password, 10) },
     });
+    // The account works right away; confirming the email is a follow-up. A
+    // mail outage must not fail sign-up (they can resend from their profile).
+    try {
+      await sendVerificationEmail(user);
+    } catch (error) {
+      logApiError('/api/auth/register#verification-email', 'POST', error);
+    }
     return Response.json({ id: user.id, email: user.email, name: user.name }, { status: 201 });
   }),
 );

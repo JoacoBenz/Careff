@@ -1,19 +1,22 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { loginUrl } from '@/lib/safe-redirect';
 import { prisma } from '@/lib/prisma';
 import { SiteHeader } from '@/components/site-header';
 import { PageHeader } from '@/components/page-header';
+import { VerifyEmailNotice } from '@/components/verify-email-notice';
 import { ProfileRegionForm } from '@/components/profile-region-form';
 
 export default async function ProfilePage() {
   const session = await auth();
-  if (!session?.user) redirect('/login');
+  if (!session?.user) redirect(loginUrl('/profile'));
 
   const user = await prisma.user.findUnique({
     where: { id: Number(session.user.id) },
     select: {
       name: true,
       email: true,
+      emailVerified: true,
       defaultCountry: true,
       defaultProvinceId: true,
       defaultProvinceName: true,
@@ -35,6 +38,7 @@ export default async function ProfilePage() {
             <p className="truncate text-sm text-[var(--ink-dim)]">{user.email}</p>
           </div>
         </div>
+        {!user.emailVerified && <VerifyEmailNotice email={user.email} />}
         <ProfileRegionForm
           initial={{
             country: user.defaultCountry ?? 'ar',

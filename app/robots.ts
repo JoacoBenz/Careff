@@ -9,8 +9,18 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/planner', '/login', '/register'],
-        disallow: ['/api/', '/groups', '/plans', '/profile', '/p/', '/join/'],
+        allow: ['/', '/planner', '/login', '/register', '/privacy', '/terms'],
+        disallow: [
+          '/api/',
+          '/groups',
+          '/plans',
+          '/profile',
+          '/p/',
+          '/join/',
+          '/forgot-password',
+          '/reset-password',
+          '/verify-email',
+        ],
       },
     ],
     sitemap: `${appUrl}/sitemap.xml`,

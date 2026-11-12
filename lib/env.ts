@@ -21,6 +21,16 @@ const envSchema = z.object({
   // env to keep the auto-suggest working without a code change.
   ENERGIA_API_URL: z.string().url().default('https://datos.energia.gob.ar/api/3/action'),
   ENERGIA_FUEL_RESOURCE: z.string().default('80ac25de-a44a-4445-9215-090cf55cfda5'),
+  // Transactional email (password reset, email verification) via Resend.
+  // Without a key, emails are printed to the server log in development and
+  // fail (logged) in production.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('Careff <onboarding@resend.dev>'),
+  // Google sign-in. The button only appears when both are set.
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
+  // Shown on the privacy and terms pages as the contact for data requests.
+  CONTACT_EMAIL: z.string().optional(),
 });
 
 function validateEnv() {
