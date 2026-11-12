@@ -60,7 +60,14 @@ export function CopyLinkButton({ url, label = 'Copiar link' }: { url: string; la
     <button
       type="button"
       onClick={async () => {
-        await navigator.clipboard.writeText(url);
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          // Clipboard denied (permissions, insecure context, older browsers):
+          // fall back to a prompt so the link can still be copied by hand.
+          window.prompt('Copiá el link:', url);
+          return;
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}

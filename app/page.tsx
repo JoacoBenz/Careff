@@ -164,7 +164,7 @@ export default function HomePage() {
           </ul>
         </div>
 
-        <div className="rise relative pb-10" style={{ ['--d' as string]: '200ms' }}>
+        <div className="rise relative pb-32" style={{ ['--d' as string]: '200ms' }}>
           <HeroVisual />
         </div>
       </section>

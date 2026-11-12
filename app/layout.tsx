@@ -38,11 +38,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Tag the document before first paint so scroll-reveal elements start
             hidden without a flash; without JS the class is never added and
-            everything simply renders visible. */}
+            everything simply renders visible. That attribute differs from the
+            server HTML by design, hence suppressHydrationWarning on <html>. */}
         <script
           dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }}
         />

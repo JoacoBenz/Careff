@@ -40,7 +40,7 @@ export function AuthShell({
 
       <aside className="rise hidden lg:block" style={{ ['--d' as string]: '120ms' }}>
         <HeroVisual />
-        <ul className="mx-auto mt-8 max-w-sm space-y-2.5 text-sm text-[var(--ink-dim)]">
+        <ul className="mx-auto mt-36 max-w-sm space-y-2.5 text-sm text-[var(--ink-dim)]">
           {PERKS.map((perk) => (
             <li key={perk} className="flex items-center gap-2.5">
               <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-400/15 text-amber-300">

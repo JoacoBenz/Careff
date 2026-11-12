@@ -137,7 +137,7 @@ export function HeroVisual() {
 
       {/* the message a driver gets */}
       <div
-        className="float absolute -bottom-9 -left-3 w-56 rounded-2xl rounded-bl-md border border-emerald-400/25 bg-[#0c1f17]/95 p-3 text-xs shadow-2xl backdrop-blur sm:-left-10"
+        className="float absolute -left-3 top-full mt-3 w-56 rounded-2xl rounded-bl-md border border-emerald-400/25 bg-[#0c1f17]/95 p-3 text-xs shadow-2xl backdrop-blur sm:-left-10"
         style={{ ['--d' as string]: '400ms' }}
       >
         <p className="flex items-center gap-1.5 font-semibold text-emerald-300">
