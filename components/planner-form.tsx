@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { seatBudget } from '@/lib/seat-budget';
 import { AddressInput } from './address-input';
+import { AddressMap, type MapPin } from './address-map';
 import { PlanResultView } from './plan-result';
 import { RouteLoading } from './route-loading';
 import { RegionSelect, type RegionValue } from './region-select';
@@ -115,6 +116,9 @@ export function PlannerForm({
   ]);
   const { loading, error, result, submit } = useCarpoolPlan();
   const resultRef = useRef<HTMLElement>(null);
+  // Which pin the preview map zooms to (the address just picked or focused);
+  // null shows every located address at once.
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
 
   // The result renders below a long form: bring it into view when it lands.
   useEffect(() => {
@@ -161,6 +165,41 @@ export function PlannerForm({
     });
   }
 
+  // Every address that already has coordinates becomes a pin on the shared
+  // preview map, so people can confirm it landed where they meant.
+  const pins: MapPin[] = [];
+  if (destinationCoords) {
+    pins.push({ id: 'dest', label: 'Destino', kind: 'destination', ...destinationCoords });
+  }
+  for (const d of drivers) {
+    if (d.lat != null && d.lon != null) {
+      pins.push({ id: d.id, label: d.name || 'Conductor', kind: 'driver', lat: d.lat, lon: d.lon });
+    }
+  }
+  for (const p of passengers) {
+    if (p.lat != null && p.lon != null) {
+      pins.push({
+        id: p.id,
+        label: p.name || 'Pasajero',
+        kind: 'passenger',
+        lat: p.lat,
+        lon: p.lon,
+      });
+    }
+  }
+  const addressCount = 1 + drivers.length + passengers.length;
+  const previewMap = (
+    <>
+      <AddressMap pins={pins} focusId={mapFocus} onShowAll={() => setMapFocus(null)} />
+      {pins.length > 0 && pins.length < addressCount && (
+        <p className="mt-1 text-[10px] text-[var(--ink-faint)]">
+          {pins.length} de {addressCount} direcciones ubicadas. Las que escribas sin elegir de la
+          lista se ubican al calcular.
+        </p>
+      )}
+    </>
+  );
+
   const driverCount = drivers.length;
   const passengerCount = passengers.length;
   const seatPct = totalSeats > 0 ? Math.min(100, (passengerCount / totalSeats) * 100) : 0;
@@ -192,7 +231,10 @@ export function PlannerForm({
                 onChange={(v, c) => {
                   setDestination(v);
                   setDestinationCoords(c);
+                  setMapFocus(c ? 'dest' : null);
                 }}
+                located={Boolean(destinationCoords)}
+                onFieldFocus={() => destinationCoords && setMapFocus('dest')}
                 region={{ country: region.country, provincia: region.provincia }}
                 placeholder="Av. Corrientes 1234, Buenos Aires"
                 required
@@ -245,7 +287,12 @@ export function PlannerForm({
                   <div className="order-4 w-full sm:order-2 sm:w-auto sm:flex-1">
                     <AddressInput
                       value={driver.address}
-                      onChange={(v, c) => updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon })}
+                      onChange={(v, c) => {
+                        updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon });
+                        setMapFocus(c ? driver.id : null);
+                      }}
+                      located={driver.lat != null}
+                      onFieldFocus={() => driver.lat != null && setMapFocus(driver.id)}
                       region={{ country: region.country, provincia: region.provincia }}
                       placeholder="Dirección de salida"
                       required
@@ -299,9 +346,12 @@ export function PlannerForm({
                   <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
                     <AddressInput
                       value={passenger.address}
-                      onChange={(v, c) =>
-                        updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon })
-                      }
+                      onChange={(v, c) => {
+                        updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon });
+                        setMapFocus(c ? passenger.id : null);
+                      }}
+                      located={passenger.lat != null}
+                      onFieldFocus={() => passenger.lat != null && setMapFocus(passenger.id)}
                       region={{ country: region.country, provincia: region.provincia }}
                       placeholder="Dirección donde lo buscan"
                       required
@@ -342,7 +392,12 @@ export function PlannerForm({
             </p>
           )}
 
-          {/* Phones/tablets: the summary column is hidden, so the action lives here. */}
+          {/* Phones/tablets: the summary column is hidden, so the map and the
+              action live here. */}
+          <div className="surface p-4 lg:hidden">
+            <p className="eyebrow mb-2">Mapa de direcciones</p>
+            {previewMap}
+          </div>
           <button
             type="submit"
             disabled={loading || overCapacity}
@@ -364,7 +419,9 @@ export function PlannerForm({
             <span className="line-clamp-2">{destination || 'Elegí el destino final'}</span>
           </p>
 
-          <dl className="mt-5 grid grid-cols-2 gap-2 text-center">
+          <div className="mt-4">{previewMap}</div>
+
+          <dl className="mt-4 grid grid-cols-2 gap-2 text-center">
             <div className="surface-inset px-2 py-3">
               <dt className="flex items-center justify-center gap-1 text-xs text-[var(--ink-dim)]">
                 <CarIcon className="h-3.5 w-3.5" /> Autos

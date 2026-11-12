@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import type { ApiErrorBody } from '@/types';
 import { AddressInput } from './address-input';
+import { AddressMap } from './address-map';
 import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
 import { fieldBase, inputClass } from './form-styles';
@@ -132,6 +133,7 @@ export function JoinGroupForm({
           placeholder="Av. Rivadavia 5000, Buenos Aires"
           required
           className={inputClass}
+          located={Boolean(coords)}
         />
         {prefilledAddress && (
           <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-300">
@@ -140,6 +142,16 @@ export function JoinGroupForm({
           </span>
         )}
       </label>
+
+      {coords && (
+        <AddressMap
+          pins={[
+            { id: 'me', label: name || 'Vos', kind: hasCar ? 'driver' : 'passenger', ...coords },
+          ]}
+          focusId="me"
+          height={170}
+        />
+      )}
 
       <fieldset>
         <legend className="field-label">¿Tenés auto?</legend>

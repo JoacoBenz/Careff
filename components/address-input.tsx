@@ -14,6 +14,11 @@ interface AddressInputProps {
   className?: string;
   // Constrains suggestions to a country (Nominatim) / province (Georef).
   region?: { country?: string; provincia?: string };
+  // True once the address has coordinates (picked from the list): shows a
+  // small "located" mark so it's obvious which rows are on the preview map.
+  located?: boolean;
+  // Lets the parent point the preview map at this field when it gets focus.
+  onFieldFocus?: () => void;
 }
 
 /**
@@ -29,6 +34,8 @@ export function AddressInput({
   required,
   className,
   region,
+  located,
+  onFieldFocus,
 }: AddressInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -76,13 +83,25 @@ export function AddressInput({
       <input
         value={value}
         onChange={(e) => handleChange(e.target.value)}
-        onFocus={() => setOpen(suggestions.length > 0)}
+        onFocus={() => {
+          setOpen(suggestions.length > 0);
+          onFieldFocus?.();
+        }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
         required={required}
-        className={className}
+        className={located ? `${className ?? ''} pr-9` : className}
         autoComplete="off"
       />
+      {located && (
+        <span
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-emerald-300"
+          title="Ubicada en el mapa"
+        >
+          <PinIcon className="h-4 w-4" />
+          <span className="sr-only">Ubicada en el mapa</span>
+        </span>
+      )}
       {open && (
         <ul className="absolute z-30 mt-1.5 max-h-56 w-full overflow-auto rounded-xl border border-[var(--line-strong)] bg-[#0b1220] p-1 shadow-2xl">
           {suggestions.map((s, i) => (
