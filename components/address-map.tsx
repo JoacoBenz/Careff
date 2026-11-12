@@ -37,7 +37,8 @@ const PIN_STYLE: Record<MapPin['kind'], string> = {
  * autocomplete shows up as a pin so people can check it landed in the right
  * place. `focusId` zooms to a single pin (the address just chosen); without
  * it the map fits them all. People can drag to look around and zoom with the
- * +/− buttons or a double-click, to check the surrounding streets. Hand-rolled
+ * mouse wheel, the +/− buttons or a double-click, to check the surrounding
+ * streets. Hand-rolled
  * (lib/tile-map.ts) instead of a map library: it only needs pan + zoom.
  */
 export function AddressMap({
@@ -101,6 +102,34 @@ export function AddressMap({
   const zoomBy = (delta: number) =>
     setView(zoomView(view, delta, { x: width / 2, y: height / 2 }, width, height));
   const moved = manual?.key === frameKey;
+
+  // Mouse-wheel zoom anchored on the cursor. Needs a native non-passive
+  // listener: React's onWheel is passive, so it can't stop the page from
+  // scrolling while the pointer is over the map. Deltas are accumulated so a
+  // trackpad's many tiny events step one zoom level at a time, not ten.
+  const latest = useRef({ view, width, height, frameKey, active: pins.length > 0 });
+  useEffect(() => {
+    latest.current = { view, width, height, frameKey, active: pins.length > 0 };
+  });
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    let accumulated = 0;
+    function onWheel(event: WheelEvent) {
+      const { view: current, width: w, height: h, frameKey: key, active } = latest.current;
+      if (!active || w === 0) return;
+      event.preventDefault();
+      accumulated += event.deltaY * (event.deltaMode === 1 ? 33 : 1); // lines → px
+      if (Math.abs(accumulated) < 60) return;
+      const delta = accumulated < 0 ? 1 : -1;
+      accumulated = 0;
+      const rect = el!.getBoundingClientRect();
+      const anchor = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      setManual({ key, view: zoomView(current, delta, anchor, w, h) });
+    }
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   return (
     <div>
@@ -251,7 +280,7 @@ export function AddressMap({
       </div>
       {pins.length > 0 && (
         <p className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-[var(--ink-faint)]">
-          <span>Arrastrá para recorrer · +/− para zoom. Ubicación aproximada.</span>
+          <span>Arrastrá para recorrer · ruedita o +/− para zoom. Ubicación aproximada.</span>
           <a
             href="https://www.openstreetmap.org/copyright"
             target="_blank"
