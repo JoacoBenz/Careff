@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
+import { allowLoginAttempt, clientIp } from './rate-limit';
 
 // A valid bcrypt hash of a random string, compared against when the email isn't
 // found, to equalize login timing (mitigates account enumeration).
@@ -45,10 +46,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = typeof credentials?.email === 'string' ? credentials.email : null;
         const password = typeof credentials?.password === 'string' ? credentials.password : null;
         if (!email || !password) return null;
+
+        // Throttle before any DB or bcrypt work: per-IP and per-account
+        // windows (lib/rate-limit.ts). A blocked attempt behaves exactly like
+        // bad credentials, so the limiter adds no enumeration signal.
+        if (!allowLoginAttempt(clientIp(request), email)) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
         // Always run bcrypt.compare (against a dummy hash when the user is

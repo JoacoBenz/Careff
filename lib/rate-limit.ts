@@ -80,6 +80,23 @@ export function enforceRateLimit(
   );
 }
 
+/**
+ * Login throttle for the credentials provider. Counts every attempt against
+ * two windows — the source IP (brute force from one machine, across accounts)
+ * and the target account (distributed guessing / enumeration of one email).
+ * A blocked attempt is reported to the caller as plain "invalid credentials",
+ * so the limiter adds no enumeration signal. Same per-process scope caveat as
+ * the module header.
+ */
+const LOGIN_IP_LIMIT: RateLimitOptions = { limit: 30, windowMs: 900_000 };
+const LOGIN_ACCOUNT_LIMIT: RateLimitOptions = { limit: 10, windowMs: 900_000 };
+
+export function allowLoginAttempt(ip: string, email: string): boolean {
+  const byIp = rateLimit(`login:ip:${ip}`, LOGIN_IP_LIMIT);
+  const byAccount = rateLimit(`login:acct:${email.trim().toLowerCase()}`, LOGIN_ACCOUNT_LIMIT);
+  return byIp.ok && byAccount.ok;
+}
+
 /** Test-only: clears all buckets between cases. */
 export function _resetRateLimits(): void {
   buckets.clear();

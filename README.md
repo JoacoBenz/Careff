@@ -75,6 +75,28 @@ npm run dev
 3. Set `NEXT_PUBLIC_APP_URL` to the same deployment URL — it drives the OpenGraph
    previews (WhatsApp link cards), `sitemap.xml` and `robots.txt`.
 4. Run `npx prisma migrate deploy` against the database.
+5. Create the least-privilege app role (`scripts/create-app-role.sql`, run as the
+   database owner) and point `DATABASE_URL` at `careff_app`; keep `DIRECT_URL` on
+   the owner role for migrations. Don't run production as a superuser.
+
+## Security notes
+
+- **Tenant isolation is enforced in application code**: every read/write is
+  scoped by the session user (plans by `userId`, groups by `ownerId`, ownership
+  re-checked before destructive actions). Public routes (`/p/<token>`,
+  `/join/<token>`) are token-gated with 72-bit random tokens and never accept ids.
+- **Login hardening**: attempts are timing-equalized (a dummy bcrypt compare runs
+  even when the email doesn't exist) and rate-limited — 10 attempts / 15 min per
+  account plus 30 / 15 min per source IP; a blocked attempt looks exactly like
+  bad credentials. Registration is rate-limited too (10 / 15 min per IP). The
+  limiter is per-process (`lib/rate-limit.ts`) — swap in a shared store if you
+  scale horizontally.
+- **Known tradeoff**: register returns `EMAIL_TAKEN` (409). That's deliberate —
+  without an email-verification flow a generic response would make legitimate
+  signups undebuggable; the rate limit keeps enumeration at scale impractical.
+- **Database role**: run production with `careff_app` (see
+  `scripts/create-app-role.sql`), never a superuser. That role is also the
+  prerequisite for enabling PostgreSQL RLS as a second defense layer later.
 
 ## Scripts
 
