@@ -165,3 +165,49 @@ describe('generateMapUrl', () => {
     );
   });
 });
+
+describe('planCarpool with repeated names', () => {
+  // Straight-line distance between "x,y" addresses: enough to make the
+  // assignment deterministic without the geo providers.
+  const dist = (a: string, b: string) => {
+    const [ax, ay] = a.split(',').map(Number);
+    const [bx, by] = b.split(',').map(Number);
+    return Math.hypot(ax - bx, ay - by);
+  };
+
+  it('treats two drivers with the same name as separate cars', () => {
+    const plan = planCarpool(
+      [
+        { name: 'Chule', address: '0,0', capacity: 1 },
+        { name: 'Chule', address: '100,0', capacity: 1 },
+      ],
+      [
+        { name: 'Ana', address: '1,0' },
+        { name: 'Beto', address: '99,0' },
+      ],
+      '50,0',
+      dist,
+    );
+    expect(plan.unassigned).toEqual([]);
+    expect(plan.routes).toHaveLength(2);
+    // Each car keeps its own seat and its own nearby passenger.
+    expect(plan.routes[0].stops.map((s) => s.name)).toEqual(['Ana']);
+    expect(plan.routes[1].stops.map((s) => s.name)).toEqual(['Beto']);
+    expect(plan.routes[0].addresses[0]).toBe('0,0');
+    expect(plan.routes[1].addresses[0]).toBe('100,0');
+  });
+
+  it('keeps passengers with the same name as separate stops', () => {
+    const plan = planCarpool(
+      [{ name: 'Sofi', address: '0,0', capacity: 2 }],
+      [
+        { name: 'Chule', address: '10,0' },
+        { name: 'Chule', address: '20,0' },
+      ],
+      '30,0',
+      dist,
+    );
+    expect(plan.routes[0].stops).toHaveLength(2);
+    expect(plan.unassigned).toEqual([]);
+  });
+});

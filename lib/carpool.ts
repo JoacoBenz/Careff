@@ -45,7 +45,10 @@ export interface DriverRoute {
 }
 
 export interface CarpoolPlanResult {
-  /** passenger name -> driver name */
+  /**
+   * passenger name -> driver name. Kept for saved-plan compatibility; lossy
+   * when names repeat, so read who rides with whom from `routes` instead.
+   */
   assignments: Record<string, string>;
   routes: DriverRoute[];
   /** Passengers that did not fit in any car. */
@@ -102,8 +105,10 @@ export function planCarpool(
   distance: DistanceFn,
   coords?: Map<string, LatLon>,
 ): CarpoolPlanResult {
-  const seatsLeft = new Map(drivers.map((d) => [d.name, d.capacity]));
-  const stopsByDriver = new Map<string, RouteStop[]>(drivers.map((d) => [d.name, []]));
+  // Per-car state is indexed by the driver's position, not by name: two
+  // drivers can share a name ("Chule" twice) and must stay separate cars.
+  const seatsLeft = drivers.map((d) => d.capacity);
+  const stopsByDriver: RouteStop[][] = drivers.map(() => []);
   const assignments: Record<string, string> = {};
   const unassigned: string[] = [];
 
@@ -112,15 +117,17 @@ export function planCarpool(
     let best: {
       poolIndex: number;
       driver: DriverInput;
+      driverIndex: number;
       position: number;
       cost: number;
     } | null = null;
 
     for (let p = 0; p < pool.length; p++) {
       const passenger = pool[p];
-      for (const driver of drivers) {
-        if ((seatsLeft.get(driver.name) ?? 0) <= 0) continue;
-        const stops = stopsByDriver.get(driver.name) ?? [];
+      for (let d = 0; d < drivers.length; d++) {
+        const driver = drivers[d];
+        if (seatsLeft[d] <= 0) continue;
+        const stops = stopsByDriver[d];
         const route = [driver.address, ...stops.map((s) => s.address), destination];
         for (let position = 0; position < route.length - 1; position++) {
           const cost =
@@ -128,7 +135,7 @@ export function planCarpool(
             distance(passenger.address, route[position + 1]) -
             distance(route[position], route[position + 1]);
           if (best === null || cost < best.cost) {
-            best = { poolIndex: p, driver, position, cost };
+            best = { poolIndex: p, driver, driverIndex: d, position, cost };
           }
         }
       }
@@ -141,15 +148,16 @@ export function planCarpool(
     }
 
     const [passenger] = pool.splice(best.poolIndex, 1);
-    seatsLeft.set(best.driver.name, (seatsLeft.get(best.driver.name) ?? 0) - 1);
+    seatsLeft[best.driverIndex] -= 1;
     assignments[passenger.name] = best.driver.name;
-    stopsByDriver
-      .get(best.driver.name)
-      ?.splice(best.position, 0, { name: passenger.name, address: passenger.address });
+    stopsByDriver[best.driverIndex].splice(best.position, 0, {
+      name: passenger.name,
+      address: passenger.address,
+    });
   }
 
-  const routes: DriverRoute[] = drivers.map((driver) => {
-    const stops = stopsByDriver.get(driver.name) ?? [];
+  const routes: DriverRoute[] = drivers.map((driver, d) => {
+    const stops = stopsByDriver[d];
     const addresses = [driver.address, ...stops.map((s) => s.address), destination];
     return {
       driver: driver.name,

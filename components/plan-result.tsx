@@ -253,7 +253,9 @@ export function PlanResultView({
             : null;
           return (
             <li
-              key={route.driver}
+              // Names can repeat ("Chule" twice): key by position. The lists
+              // are fixed per plan and never reorder, so the index is stable.
+              key={`${i}-${route.driver}`}
               className="surface overflow-hidden"
               style={{ '--car': color } as CSSProperties}
             >
@@ -279,7 +281,7 @@ export function PlanResultView({
                     aria-hidden
                   />
                   {route.stops.map((stop, n) => (
-                    <li key={stop.name} className="relative flex gap-3">
+                    <li key={`${n}-${stop.name}`} className="relative flex gap-3">
                       <span className="z-[1] flex h-6 w-6 flex-none items-center justify-center rounded-full border border-[var(--car)] bg-[#0b1220] text-xs font-bold text-[var(--car)]">
                         {n + 1}
                       </span>
