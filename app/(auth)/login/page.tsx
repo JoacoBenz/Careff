@@ -1,38 +1,22 @@
-'use client';
-
-import { useState, type FormEvent } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthShell } from '@/components/auth-shell';
-import { inputClass } from '@/components/form-styles';
+import { LoginForm } from '@/components/login-form';
+import { googleEnabled } from '@/lib/auth';
+import { safeCallbackUrl } from '@/lib/safe-redirect';
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const metadata: Metadata = { title: 'Iniciar sesión' };
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-    const form = new FormData(event.currentTarget);
-    try {
-      const result = await signIn('credentials', {
-        email: String(form.get('email') ?? ''),
-        password: String(form.get('password') ?? ''),
-        redirect: false,
-      });
-      if (result?.error) {
-        setError('Email o contraseña incorrectos');
-      } else {
-        router.push('/');
-        router.refresh();
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+interface PageProps {
+  searchParams: Promise<{ callbackUrl?: string | string[]; error?: string; reset?: string }>;
+}
+
+// Server page: reads the return path and what sign-in methods are configured,
+// then hands off to the client form.
+export default async function LoginPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const callbackUrl = safeCallbackUrl(params.callbackUrl);
+  const query = `?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return (
     <AuthShell
@@ -41,47 +25,26 @@ export default function LoginPage() {
       footer={
         <>
           ¿No tenés cuenta?{' '}
-          <Link href="/register" className="link-sweep link-amber">
+          <Link
+            href={callbackUrl === '/' ? '/register' : `/register${query}`}
+            className="link-sweep link-amber"
+          >
             Crear cuenta gratis
           </Link>
         </>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        {error && (
-          <p className="note note-error" role="alert">
-            {error}
-          </p>
-        )}
-        <label className="block">
-          <span className="field-label">Email</span>
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="vos@mail.com"
-            className={inputClass}
-          />
-        </label>
-        <label className="block">
-          <span className="field-label">Contraseña</span>
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className={inputClass}
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
-        >
-          {loading ? 'Ingresando…' : 'Ingresar'}
-        </button>
-      </form>
+      <LoginForm
+        callbackUrl={callbackUrl}
+        googleEnabled={googleEnabled}
+        // Auth.js sends failed Google sign-ins back here with ?error=...
+        initialError={
+          params.error ? 'No pudimos iniciar sesión con Google. Probá de nuevo.' : undefined
+        }
+        notice={
+          params.reset ? 'Contraseña actualizada. Ya podés ingresar con la nueva.' : undefined
+        }
+      />
     </AuthShell>
   );
 }

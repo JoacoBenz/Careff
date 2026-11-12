@@ -366,6 +366,12 @@ export default function HomePage() {
             <Link href="/login" className="link-sweep hover:text-white">
               Iniciar sesión
             </Link>
+            <Link href="/privacy" className="link-sweep hover:text-white">
+              Privacidad
+            </Link>
+            <Link href="/terms" className="link-sweep hover:text-white">
+              Términos
+            </Link>
           </nav>
           <p className="text-center">Hecho con datos abiertos de OpenStreetMap</p>
         </div>

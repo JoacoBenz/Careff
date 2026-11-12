@@ -24,6 +24,19 @@ export interface MapPin {
   kind: 'driver' | 'passenger' | 'destination';
   lat: number;
   lon: number;
+  /** Fill color override (route maps color pins by car). */
+  color?: string;
+  /** Glyph override (e.g. the pickup number); defaults to the label's initial. */
+  text?: string;
+  /** Always show the label chip, whatever the pin count. */
+  showLabel?: boolean;
+}
+
+/** A polyline drawn under the pins (one per car on the result map). */
+export interface MapRoute {
+  id: string;
+  color: string;
+  points: { lat: number; lon: number }[];
 }
 
 const PIN_STYLE: Record<MapPin['kind'], string> = {
@@ -46,6 +59,7 @@ export function AddressMap({
   focusId,
   onShowAll,
   onClose,
+  routes = [],
   height = 200,
   emptyHint = 'Elegí una dirección de la lista y la vas a ver acá para confirmarla.',
 }: {
@@ -54,6 +68,8 @@ export function AddressMap({
   onShowAll?: () => void;
   /** Renders a close button (used by the inline map on phones). */
   onClose?: () => void;
+  /** Lines drawn under the pins; included when framing the map. */
+  routes?: MapRoute[];
   height?: number;
   emptyHint?: string;
 }) {
@@ -74,7 +90,11 @@ export function AddressMap({
   }, []);
 
   const focused = focusId ? pins.find((p) => p.id === focusId) : undefined;
-  const fitted = fitView(focused ? [focused] : pins, width, height);
+  const fitted = fitView(
+    focused ? [focused] : [...pins, ...routes.flatMap((r) => r.points)],
+    width,
+    height,
+  );
 
   // Manual pan/zoom is kept only while the pins and focus stay the same:
   // picking another address re-frames the map on it.
@@ -181,13 +201,10 @@ export function AddressMap({
           </div>
         ) : (
           <>
-            {/* Tiles are light-themed; invert + hue-rotate turns them into a
-                night map that matches the UI while keeping water/parks legible. */}
-            <div
-              className="absolute inset-0"
-              style={{ filter: 'invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88)' }}
-              aria-hidden
-            >
+            {/* OpenStreetMap's standard style as-is: the classic light street
+                map (white streets, yellow avenues, green parks), which reads
+                like Google Maps and keeps street names fully legible. */}
+            <div className="absolute inset-0 bg-[#f2efe9]" aria-hidden>
               {tiles.map((tile) => (
                 // Plain <img>: these are third-party map tiles positioned by
                 // pixel math — next/image optimization doesn't apply.
@@ -207,6 +224,45 @@ export function AddressMap({
                 />
               ))}
             </div>
+            {width > 0 && routes.length > 0 && (
+              <svg
+                className="pointer-events-none absolute inset-0"
+                width={width}
+                height={height}
+                aria-hidden
+              >
+                {routes.map((route) => {
+                  const d = route.points
+                    .map((pt, n) => {
+                      const sp = toScreen(pt, view, width, height);
+                      return `${n === 0 ? 'M' : 'L'}${sp.x.toFixed(1)} ${sp.y.toFixed(1)}`;
+                    })
+                    .join(' ');
+                  return (
+                    <g key={route.id}>
+                      {/* dark casing keeps the colored line readable on light tiles */}
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke="#0b1220"
+                        strokeOpacity="0.55"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={route.color}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
             {width > 0 &&
               pins.map((pin) => {
                 const pos = toScreen(pin, view, width, height);
@@ -225,11 +281,15 @@ export function AddressMap({
                       <span className="node-pulse absolute h-9 w-9 rounded-full bg-amber-300/40" />
                     )}
                     <span
-                      className={`relative flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold shadow-lg ring-2 ring-[#030712] ${PIN_STYLE[pin.kind]}`}
+                      className={`relative flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold shadow-lg ring-2 ring-[#030712] ${pin.color ? 'text-[#0b1220]' : PIN_STYLE[pin.kind]}`}
+                      style={pin.color ? { background: pin.color } : undefined}
                     >
-                      {pin.kind === 'destination' ? '⚑' : pin.label.trim().charAt(0).toUpperCase()}
+                      {pin.text ??
+                        (pin.kind === 'destination'
+                          ? '⚑'
+                          : pin.label.trim().charAt(0).toUpperCase())}
                     </span>
-                    {(isFocus || pins.length <= 4) && (
+                    {(isFocus || pin.showLabel || pins.length <= 4) && (
                       <span className="mt-1 max-w-28 truncate rounded-md bg-[#030712]/85 px-1.5 py-0.5 text-[10px] font-medium text-white">
                         {pin.label}
                       </span>

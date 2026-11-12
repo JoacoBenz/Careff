@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { loginUrl } from '@/lib/safe-redirect';
 import { prisma } from '@/lib/prisma';
 import { SiteHeader } from '@/components/site-header';
 import { CreateGroupForm } from '@/components/create-group-form';
@@ -9,7 +10,7 @@ import { ArrowRightIcon, CarIcon, UsersIcon } from '@/components/icons';
 
 export default async function GroupsPage() {
   const session = await auth();
-  if (!session?.user) redirect('/login');
+  if (!session?.user) redirect(loginUrl('/groups'));
 
   const groups = await prisma.group.findMany({
     where: { ownerId: Number(session.user.id) },
