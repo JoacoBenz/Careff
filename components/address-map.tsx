@@ -88,6 +88,11 @@ export function AddressMap({
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if ((event.target as HTMLElement).closest('button, a')) return;
+    // A text selection inside the map (e.g. a double-click on a pin label)
+    // makes the browser start its native drag-and-drop on the next press,
+    // which cancels the pointer and drags the map's content instead of
+    // panning. Drop any selection before the gesture starts.
+    window.getSelection()?.removeAllRanges();
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, start: view };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -135,12 +140,20 @@ export function AddressMap({
     <div>
       <div
         ref={boxRef}
-        className={`surface-inset relative overflow-hidden ${pins.length > 0 ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
+        className={`surface-inset relative overflow-hidden select-none ${pins.length > 0 ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
         style={{ height }}
         onPointerDown={pins.length > 0 ? onPointerDown : undefined}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onLostPointerCapture={onPointerUp}
+        // Native drag-and-drop of tiles/labels would hijack the pan gesture.
+        onDragStart={(event) => event.preventDefault()}
+        // Mouse: stop the press from starting a text selection (a selection
+        // is what lets the native drag start). Buttons keep their default.
+        onMouseDown={(event) => {
+          if (!(event.target as HTMLElement).closest('button, a')) event.preventDefault();
+        }}
         onDoubleClick={(event) => {
           if (pins.length === 0) return;
           const rect = event.currentTarget.getBoundingClientRect();
