@@ -37,7 +37,7 @@ export function CreateGroupForm() {
 
   return (
     <form onSubmit={onSubmit}>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -49,13 +49,13 @@ export function CreateGroupForm() {
         <button
           type="submit"
           disabled={loading}
-          className="btn-glow shrink-0 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          className="btn-glow shrink-0 rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
         >
           {loading ? 'Creando…' : 'Crear grupo'}
         </button>
       </div>
       {error && (
-        <p className="mt-2 text-sm text-red-700" role="alert">
+        <p className="note note-error mt-3" role="alert">
           {error}
         </p>
       )}

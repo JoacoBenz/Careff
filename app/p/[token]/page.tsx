@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { PlanResultView } from '@/components/plan-result';
 import { SiteHeader } from '@/components/site-header';
+import { PageHeader } from '@/components/page-header';
+import { FlagIcon } from '@/components/icons';
 import type { CarpoolPlanResult } from '@/lib/carpool';
 
 interface PageProps {
@@ -43,24 +45,33 @@ export default async function SharedPlanPage({ params }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-white">{plan.title}</h1>
-          <p className="text-sm text-slate-400">
-            🏁 {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
-          </p>
-        </header>
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <PageHeader
+          eyebrow="Plan compartido"
+          title={plan.title}
+          description={
+            <span className="inline-flex items-center gap-1.5">
+              <FlagIcon className="h-3.5 w-3.5 flex-none" />
+              {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
+            </span>
+          }
+        />
         <PlanResultView
           plan={plan.result as unknown as CarpoolPlanResult}
           title={plan.title}
           showExpenses={false}
         />
-        <p className="mt-8 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
-          ¿Tenés que organizar un viaje así?{' '}
-          <Link href="/planner" className="link-sweep font-medium text-emerald-700">
-            Armalo gratis con Careff
+        <div className="surface mt-8 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <p className="font-semibold text-white">¿Tenés que organizar un viaje así?</p>
+            <p className="text-sm text-[var(--ink-dim)]">
+              Gratis y sin registrarte: cargás el grupo y sale armado.
+            </p>
+          </div>
+          <Link href="/planner" className="btn-glow rounded-xl px-5 py-2.5 text-sm">
+            Armalo con Careff
           </Link>
-        </p>
+        </div>
       </main>
     </div>
   );

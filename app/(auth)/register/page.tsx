@@ -4,7 +4,8 @@ import { useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Logo } from '@/components/logo';
+import { AuthShell } from '@/components/auth-shell';
+import { inputClass } from '@/components/form-styles';
 import type { ApiErrorBody } from '@/types';
 
 export default function RegisterPage() {
@@ -43,65 +44,59 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
-      <Link href="/" aria-label="Inicio">
-        <Logo />
-      </Link>
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow"
-      >
-        <h1 className="text-xl font-semibold">Crear cuenta</h1>
+    <AuthShell
+      title="Creá tu cuenta"
+      subtitle="Gratis para siempre. Sin tarjeta de crédito."
+      footer={
+        <>
+          ¿Ya tenés cuenta?{' '}
+          <Link href="/login" className="link-sweep link-amber">
+            Iniciar sesión
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
         {error && (
-          <p className="rounded bg-red-50 p-2 text-sm text-red-700" role="alert">
+          <p className="note note-error" role="alert">
             {error}
           </p>
         )}
-        <label className="block text-sm">
-          Nombre
-          <input
-            name="name"
-            type="text"
-            required
-            autoComplete="name"
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-          />
+        <label className="block">
+          <span className="field-label">Nombre</span>
+          <input name="name" type="text" required autoComplete="name" className={inputClass} />
         </label>
-        <label className="block text-sm">
-          Email
+        <label className="block">
+          <span className="field-label">Email</span>
           <input
             name="email"
             type="email"
             required
             autoComplete="email"
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            placeholder="vos@mail.com"
+            className={inputClass}
           />
         </label>
-        <label className="block text-sm">
-          Contraseña
+        <label className="block">
+          <span className="field-label">Contraseña</span>
           <input
             name="password"
             type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            className={inputClass}
           />
+          <span className="mt-1.5 block text-xs text-[var(--ink-faint)]">Mínimo 8 caracteres.</span>
         </label>
         <button
           type="submit"
           disabled={loading}
-          className="btn-glow w-full rounded-lg py-2 disabled:opacity-50"
+          className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
         >
           {loading ? 'Creando…' : 'Crear cuenta'}
         </button>
-        <p className="text-center text-sm text-gray-500">
-          ¿Ya tenés cuenta?{' '}
-          <Link href="/login" className="link-sweep font-medium text-emerald-700">
-            Iniciar sesión
-          </Link>
-        </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

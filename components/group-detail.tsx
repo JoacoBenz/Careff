@@ -11,6 +11,7 @@ import { useRegion } from './use-region';
 import { useOrigin } from './use-origin';
 import { useCarpoolPlan } from './use-carpool-plan';
 import { inputClass } from './form-styles';
+import { CarIcon, CloseIcon, SparkIcon, UserIcon, UsersIcon, WhatsAppIcon } from './icons';
 
 export interface GroupMemberView {
   id: number;
@@ -25,11 +26,14 @@ export interface GroupMemberView {
 export function InviteBox({ inviteUrl, groupName }: { inviteUrl: string; groupName: string }) {
   const message = `🚗 Sumate al grupo «${groupName}» en Careff para organizar quién lleva a quién. Decí si tenés auto y desde dónde salís acá: ${inviteUrl}`;
   return (
-    <div className="rounded-xl border border-dashed border-amber-300/70 bg-white p-4">
-      <p className="text-sm font-medium text-slate-700">
-        Invitá al grupo: cada persona se suma sola con este link
-      </p>
-      <p className="mt-1 break-all rounded bg-white px-2 py-1 font-mono text-xs text-slate-500">
+    <div className="surface overflow-hidden p-5">
+      <span
+        className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-amber-400/15 blur-3xl"
+        aria-hidden
+      />
+      <p className="eyebrow">Invitación</p>
+      <p className="mt-1.5 font-semibold text-white">Cada persona se suma sola con este link</p>
+      <p className="surface-inset mt-3 break-all px-3 py-2 font-mono text-xs text-amber-200/90">
         {inviteUrl}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -37,8 +41,9 @@ export function InviteBox({ inviteUrl, groupName }: { inviteUrl: string; groupNa
           href={`https://wa.me/?text=${encodeURIComponent(message)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+          className="btn-wa rounded-xl px-3.5 py-2 text-sm"
         >
+          <WhatsAppIcon className="h-4 w-4" />
           Invitar por WhatsApp
         </a>
         <CopyLinkButton url={inviteUrl} />
@@ -73,44 +78,56 @@ export function MemberList({ groupId, members }: { groupId: number; members: Gro
 
   if (members.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-        Todavía no se sumó nadie. Mandá el link de invitación al grupo 👆
-      </p>
+      <div className="surface-dashed p-8 text-center">
+        <UsersIcon className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
+        <p className="mt-3 text-sm text-[var(--ink-dim)]">
+          Todavía no se sumó nadie. Mandá el link de invitación al grupo.
+        </p>
+      </div>
     );
   }
 
   return (
     <>
       {error && (
-        <p className="mb-2 rounded-lg bg-red-50 p-2.5 text-sm text-red-700" role="alert">
+        <p className="note note-error mb-2" role="alert">
           {error}
         </p>
       )}
-      <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+      <ul className="surface divide-y divide-[var(--line)] overflow-hidden">
         {members.map((member) => (
           <li key={member.id} className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="min-w-0">
-              <p className="font-medium text-slate-900">{member.name}</p>
-              <p className="truncate text-xs text-slate-500">{member.address}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={`flex h-9 w-9 flex-none items-center justify-center rounded-xl ${
+                  member.hasCar
+                    ? 'bg-amber-400/15 text-amber-300'
+                    : 'bg-white/5 text-[var(--ink-dim)]'
+                }`}
+              >
+                {member.hasCar ? <CarIcon className="h-5 w-5" /> : <UserIcon className="h-5 w-5" />}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-medium text-white">{member.name}</p>
+                <p className="truncate text-xs text-[var(--ink-faint)]">{member.address}</p>
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {member.hasCar ? (
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                  🚗 {member.seats} asiento{member.seats === 1 ? '' : 's'}
+                <span className="chip chip-amber">
+                  {member.seats} asiento{member.seats === 1 ? '' : 's'}
                 </span>
               ) : (
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  🙋 pasajero
-                </span>
+                <span className="chip">pasajero</span>
               )}
               <button
                 type="button"
                 onClick={() => remove(member.id)}
                 disabled={removing === member.id}
-                className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40"
+                className="btn-icon h-8 w-8"
                 aria-label={`Quitar a ${member.name}`}
               >
-                ✕
+                <CloseIcon className="h-3.5 w-3.5" />
               </button>
             </div>
           </li>
@@ -167,61 +184,65 @@ export function GroupPlanner({
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="surface p-5 sm:p-6">
       {loading && <RouteLoading />}
-      <h2 className="font-semibold text-slate-900">Planificar el viaje del grupo</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        {drivers.length} conductor{drivers.length === 1 ? '' : 'es'} ({totalSeats} asiento
-        {totalSeats === 1 ? '' : 's'}) · {passengers.length} pasajero
-        {passengers.length === 1 ? '' : 's'}
-      </p>
+      <p className="eyebrow">Planificar</p>
+      <h2 className="mt-1 text-lg font-semibold text-white">El viaje del grupo</h2>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="chip chip-amber">
+          <CarIcon className="h-3.5 w-3.5" />
+          {drivers.length} conductor{drivers.length === 1 ? '' : 'es'} · {totalSeats} asiento
+          {totalSeats === 1 ? '' : 's'}
+        </span>
+        <span className="chip">
+          <UsersIcon className="h-3.5 w-3.5" />
+          {passengers.length} pasajero{passengers.length === 1 ? '' : 's'}
+        </span>
+      </div>
       {!ready && (
-        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="note note-warn mt-4">
           {overCapacity
             ? `Hay ${passengers.length} pasajeros pero solo ${totalSeats} asiento${totalSeats === 1 ? '' : 's'}. Hace falta otro conductor o más asientos libres para que entren todos.`
             : 'Para armar el viaje hace falta al menos un conductor con asientos y un pasajero.'}
         </p>
       )}
-      <form onSubmit={onSubmit} className="mt-4 space-y-3">
-        <div className="text-sm text-slate-600">
-          Región (mejora la precisión de las direcciones)
-          <div className="mt-1">
-            <RegionSelect value={region} onChange={setRegion} />
-          </div>
+      <form onSubmit={onSubmit} className="mt-5 space-y-4">
+        <div>
+          <span className="field-label">Región (mejora la precisión de las direcciones)</span>
+          <RegionSelect value={region} onChange={setRegion} />
         </div>
-        <label className="block text-sm text-slate-600">
-          Destino final
-          <div className="mt-1">
-            <AddressInput
-              value={destination}
-              onChange={(v, c) => {
-                setDestination(v);
-                setDestinationCoords(c);
-              }}
-              region={{ country: region.country, provincia: region.provincia }}
-              placeholder="Av. Corrientes 1234, Buenos Aires"
-              required
-              className={inputClass}
-            />
-          </div>
+        <label className="block">
+          <span className="field-label">Destino final</span>
+          <AddressInput
+            value={destination}
+            onChange={(v, c) => {
+              setDestination(v);
+              setDestinationCoords(c);
+            }}
+            region={{ country: region.country, provincia: region.provincia }}
+            placeholder="Av. Corrientes 1234, Buenos Aires"
+            required
+            className={inputClass}
+          />
         </label>
         {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+          <p className="note note-error" role="alert">
             {error}
           </p>
         )}
         <button
           type="submit"
           disabled={loading || !ready}
-          className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
+          className="btn-glow w-full rounded-2xl py-3 disabled:opacity-50"
         >
-          {loading ? 'Calculando rutas…' : '✨ Calcular quién lleva a quién'}
+          <SparkIcon className="h-5 w-5" />
+          {loading ? 'Calculando rutas…' : 'Calcular quién lleva a quién'}
         </button>
       </form>
 
       {result && (
-        <div className="mt-5 space-y-3">
-          <h3 className="font-semibold text-slate-900">Resultado</h3>
+        <div className="rise mt-6 space-y-3 border-t border-[var(--line)] pt-6">
+          <p className="eyebrow">Resultado</p>
           <PlanResultView
             plan={result.plan}
             title={`${groupName} — viaje`}

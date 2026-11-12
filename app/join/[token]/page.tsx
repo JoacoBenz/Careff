@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PROFILE_COOKIE, parseProfileCookie } from '@/lib/profile-cookie';
-import { Logo } from '@/components/logo';
+import { UsersIcon } from '@/components/icons';
 import { SiteHeader } from '@/components/site-header';
 import { JoinGroupForm, type JoinFormInitial } from '@/components/join-group-form';
 import type { RegionValue } from '@/components/region-select';
@@ -61,17 +61,17 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-10">
-        <header className="mb-6 text-center">
-          <span className="flex justify-center">
-            <Logo />
-          </span>
-          <h1 className="mt-2 text-2xl font-bold text-white">
-            {group.owner.name} te invitó a «{group.name}»
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
+        <header className="rise mb-6 text-center">
+          <span className="chip chip-amber">
+            <UsersIcon className="h-3.5 w-3.5" />
             {group._count.members} persona
-            {group._count.members === 1 ? ' ya se sumó' : 's ya se sumaron'} · Decí desde dónde
-            salís y si llevás auto. Sin registrarte, gratis.
+            {group._count.members === 1 ? ' ya se sumó' : 's ya se sumaron'}
+          </span>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
+            {group.owner.name} te invitó a <span className="text-gradient">«{group.name}»</span>
+          </h1>
+          <p className="mt-2 text-sm text-[var(--ink-dim)]">
+            Decí desde dónde salís y si llevás auto. Sin registrarte, gratis.
           </p>
         </header>
         <JoinGroupForm

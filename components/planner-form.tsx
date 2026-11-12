@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { seatBudget } from '@/lib/seat-budget';
 import { AddressInput } from './address-input';
@@ -11,6 +11,16 @@ import { useRegion } from './use-region';
 import { useOrigin } from './use-origin';
 import { useCarpoolPlan } from './use-carpool-plan';
 import { fieldBase, inputClass } from './form-styles';
+import {
+  AlertIcon,
+  CarIcon,
+  CloseIcon,
+  FlagIcon,
+  PlusIcon,
+  SaveIcon,
+  SparkIcon,
+  UsersIcon,
+} from './icons';
 
 // Stable per-row id so React keys survive row removal (index keys would
 // mis-associate each AddressInput's internal suggestion state on delete).
@@ -48,18 +58,40 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">
+    <section className="surface p-5 sm:p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-amber-400/15 text-sm font-bold text-amber-300 ring-1 ring-amber-400/30">
           {step}
         </span>
         <div>
-          <h2 className="font-semibold text-slate-900">{title}</h2>
-          {hint && <p className="text-xs text-slate-500">{hint}</p>}
+          <h2 className="font-semibold text-white">{title}</h2>
+          {hint && <p className="text-xs text-[var(--ink-dim)]">{hint}</p>}
         </div>
       </div>
       {children}
     </section>
+  );
+}
+
+function AddRowButton({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-amber-300 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <PlusIcon className="h-4 w-4" />
+      {children}
+    </button>
   );
 }
 
@@ -82,6 +114,12 @@ export function PlannerForm({
     { id: newRowId(), name: '', address: '' },
   ]);
   const { loading, error, result, submit } = useCarpoolPlan();
+  const resultRef = useRef<HTMLElement>(null);
+
+  // The result renders below a long form: bring it into view when it lands.
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [result]);
 
   // Live seat budget: passengers can never outnumber the seats the drivers
   // bring, so the "+ Agregar pasajero" button locks when the cars are full.
@@ -123,29 +161,32 @@ export function PlannerForm({
     });
   }
 
+  const driverCount = drivers.length;
+  const passengerCount = passengers.length;
+  const seatPct = totalSeats > 0 ? Math.min(100, (passengerCount / totalSeats) * 100) : 0;
+  const submitLabel = loading ? 'Calculando rutas…' : 'Calcular distribución';
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {loading && <RouteLoading />}
-      <form onSubmit={onSubmit} className="space-y-4">
-        <SectionCard step="1" title="El viaje" hint="Un nombre para reconocerlo y dónde termina.">
-          <label className="block text-sm text-slate-600">
-            Nombre del viaje (opcional)
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Cumple de Martina"
-              className={`mt-1 ${inputClass}`}
-            />
-          </label>
-          <div className="mt-3 text-sm text-slate-600">
-            Región (mejora la precisión de las direcciones)
-            <div className="mt-1">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <form id="planner-form" onSubmit={onSubmit} className="space-y-4">
+          <SectionCard step="1" title="El viaje" hint="Un nombre para reconocerlo y dónde termina.">
+            <label className="block">
+              <span className="field-label">Nombre del viaje (opcional)</span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Cumple de Martina"
+                className={inputClass}
+              />
+            </label>
+            <div className="mt-4">
+              <span className="field-label">Región (mejora la precisión de las direcciones)</span>
               <RegionSelect value={region} onChange={setRegion} />
             </div>
-          </div>
-          <label className="mt-3 block text-sm text-slate-600">
-            Destino final
-            <div className="mt-1">
+            <label className="mt-4 block">
+              <span className="field-label">Destino final</span>
               <AddressInput
                 value={destination}
                 onChange={(v, c) => {
@@ -157,171 +198,255 @@ export function PlannerForm({
                 required
                 className={inputClass}
               />
+            </label>
+          </SectionCard>
+
+          <SectionCard
+            step="2"
+            title="Conductores"
+            hint="Quiénes manejan, desde dónde salen y cuántos asientos libres tienen."
+          >
+            <div className="space-y-2">
+              {drivers.map((driver, i) => (
+                // Mobile: name + seats + remove on one line, address full-width
+                // below. Desktop (sm): everything inline via order utilities.
+                <div
+                  key={driver.id}
+                  className="surface-inset flex flex-wrap gap-2 p-2 sm:border-0 sm:bg-transparent sm:p-0"
+                >
+                  <input
+                    value={driver.name}
+                    onChange={(e) => updateDriver(i, { name: e.target.value })}
+                    placeholder="Nombre"
+                    required
+                    aria-label="Nombre del conductor"
+                    className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    max={8}
+                    value={driver.capacity}
+                    onChange={(e) => updateDriver(i, { capacity: e.target.value })}
+                    required
+                    className={`${fieldBase} order-2 w-16 text-center sm:order-3 sm:w-20`}
+                    title="Asientos libres"
+                    aria-label="Asientos libres"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDrivers((rows) => rows.filter((_, j) => j !== i))}
+                    disabled={drivers.length === 1}
+                    className="btn-icon order-3 w-10 sm:order-4"
+                    aria-label="Quitar conductor"
+                  >
+                    <CloseIcon className="h-4 w-4" />
+                  </button>
+                  <div className="order-4 w-full sm:order-2 sm:w-auto sm:flex-1">
+                    <AddressInput
+                      value={driver.address}
+                      onChange={(v, c) => updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon })}
+                      region={{ country: region.country, provincia: region.provincia }}
+                      placeholder="Dirección de salida"
+                      required
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          </label>
-        </SectionCard>
+            <AddRowButton
+              onClick={() =>
+                setDrivers((rows) => [
+                  ...rows,
+                  { id: newRowId(), name: '', address: '', capacity: '3' },
+                ])
+              }
+              disabled={drivers.length >= 10}
+            >
+              Agregar conductor
+            </AddRowButton>
+          </SectionCard>
 
-        <SectionCard
-          step="2"
-          title="Conductores"
-          hint="Quiénes manejan, desde dónde salen y cuántos asientos libres tienen."
-        >
-          <div className="space-y-2">
-            {drivers.map((driver, i) => (
-              // Mobile: name + seats + remove on one line, address full-width
-              // below. Desktop (sm): everything inline via order utilities.
-              <div
-                key={driver.id}
-                className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
-              >
-                <input
-                  value={driver.name}
-                  onChange={(e) => updateDriver(i, { name: e.target.value })}
-                  placeholder="Nombre"
-                  required
-                  aria-label="Nombre del conductor"
-                  className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
-                />
-                <input
-                  type="number"
-                  min={1}
-                  max={8}
-                  value={driver.capacity}
-                  onChange={(e) => updateDriver(i, { capacity: e.target.value })}
-                  required
-                  className={`${fieldBase} order-2 w-16 sm:order-3 sm:w-20`}
-                  title="Asientos libres"
-                  aria-label="Asientos libres"
-                />
-                <button
-                  type="button"
-                  onClick={() => setDrivers((rows) => rows.filter((_, j) => j !== i))}
-                  disabled={drivers.length === 1}
-                  className="order-3 rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40 sm:order-4"
-                  aria-label="Quitar conductor"
-                >
-                  ✕
-                </button>
-                <div className="order-4 w-full sm:order-2 sm:w-auto sm:flex-1">
-                  <AddressInput
-                    value={driver.address}
-                    onChange={(v, c) => updateDriver(i, { address: v, lat: c?.lat, lon: c?.lon })}
-                    region={{ country: region.country, provincia: region.provincia }}
-                    placeholder="Dirección"
-                    required
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setDrivers((rows) => [
-                ...rows,
-                { id: newRowId(), name: '', address: '', capacity: '3' },
-              ])
-            }
-            disabled={drivers.length >= 10}
-            className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
+          <SectionCard
+            step="3"
+            title="Pasajeros"
+            hint={`Quiénes necesitan que los pasen a buscar. Asientos: ${passengers.length}/${totalSeats}.`}
           >
-            + Agregar conductor
-          </button>
-        </SectionCard>
+            <div className="space-y-2">
+              {passengers.map((passenger, i) => (
+                <div
+                  key={passenger.id}
+                  className="surface-inset flex flex-wrap gap-2 p-2 sm:border-0 sm:bg-transparent sm:p-0"
+                >
+                  <input
+                    value={passenger.name}
+                    onChange={(e) => updatePassenger(i, { name: e.target.value })}
+                    placeholder="Nombre"
+                    required
+                    aria-label="Nombre del pasajero"
+                    className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPassengers((rows) => rows.filter((_, j) => j !== i))}
+                    disabled={passengers.length === 1}
+                    className="btn-icon order-2 w-10 sm:order-3"
+                    aria-label="Quitar pasajero"
+                  >
+                    <CloseIcon className="h-4 w-4" />
+                  </button>
+                  <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
+                    <AddressInput
+                      value={passenger.address}
+                      onChange={(v, c) =>
+                        updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon })
+                      }
+                      region={{ country: region.country, provincia: region.provincia }}
+                      placeholder="Dirección donde lo buscan"
+                      required
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <AddRowButton
+              onClick={() =>
+                setPassengers((rows) => [...rows, { id: newRowId(), name: '', address: '' }])
+              }
+              disabled={passengers.length >= 30 || seatsFull}
+            >
+              Agregar pasajero
+            </AddRowButton>
+            {seatsFull && !overCapacity && (
+              <p className="note note-warn mt-2">
+                Asientos completos ({totalSeats}). Para sumar más pasajeros, agregá otro conductor o
+                aumentá los asientos libres.
+              </p>
+            )}
+          </SectionCard>
 
-        <SectionCard
-          step="3"
-          title="Pasajeros"
-          hint={`Quiénes necesitan que los pasen a buscar. Asientos: ${passengers.length}/${totalSeats}.`}
-        >
-          <div className="space-y-2">
-            {passengers.map((passenger, i) => (
-              <div
-                key={passenger.id}
-                className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2 sm:bg-transparent sm:p-0"
-              >
-                <input
-                  value={passenger.name}
-                  onChange={(e) => updatePassenger(i, { name: e.target.value })}
-                  placeholder="Nombre"
-                  required
-                  aria-label="Nombre del pasajero"
-                  className={`${inputClass} order-1 min-w-0 flex-1 sm:max-w-36`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPassengers((rows) => rows.filter((_, j) => j !== i))}
-                  disabled={passengers.length === 1}
-                  className="order-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40 sm:order-3"
-                  aria-label="Quitar pasajero"
-                >
-                  ✕
-                </button>
-                <div className="order-3 w-full sm:order-2 sm:w-auto sm:flex-1">
-                  <AddressInput
-                    value={passenger.address}
-                    onChange={(v, c) =>
-                      updatePassenger(i, { address: v, lat: c?.lat, lon: c?.lon })
-                    }
-                    region={{ country: region.country, provincia: region.provincia }}
-                    placeholder="Dirección"
-                    required
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setPassengers((rows) => [...rows, { id: newRowId(), name: '', address: '' }])
-            }
-            disabled={passengers.length >= 30 || seatsFull}
-            className="link-sweep mt-3 text-sm font-medium text-emerald-700 disabled:opacity-40"
-          >
-            + Agregar pasajero
-          </button>
-          {seatsFull && (
-            <p className="mt-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800">
-              🚗 Asientos completos ({totalSeats}). Para sumar más pasajeros, agregá otro conductor
-              o aumentá los asientos libres.
+          {overCapacity && (
+            <p className="note note-warn flex gap-2" role="alert">
+              <AlertIcon className="mt-0.5 h-4 w-4 flex-none" />
+              <span>
+                Hay {passengers.length} pasajeros pero solo {totalSeats} asiento
+                {totalSeats === 1 ? '' : 's'}. Quitá pasajeros o sumá asientos para poder calcular.
+              </span>
             </p>
           )}
-        </SectionCard>
+          {error && (
+            <p className="note note-error" role="alert">
+              {error}
+            </p>
+          )}
 
-        {overCapacity && (
-          <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">
-            Hay {passengers.length} pasajeros pero solo {totalSeats} asiento
-            {totalSeats === 1 ? '' : 's'}. Quitá pasajeros o sumá asientos para poder calcular.
-          </p>
-        )}
-        {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
+          {/* Phones/tablets: the summary column is hidden, so the action lives here. */}
+          <button
+            type="submit"
+            disabled={loading || overCapacity}
+            className="btn-glow w-full rounded-2xl py-3.5 text-base disabled:opacity-50 lg:hidden"
+          >
+            <SparkIcon className="h-5 w-5" />
+            {submitLabel}
+          </button>
+        </form>
 
-        <button
-          type="submit"
-          disabled={loading || overCapacity}
-          className="btn-glow w-full rounded-xl py-3 text-base disabled:opacity-50"
-        >
-          {loading ? 'Calculando rutas…' : '✨ Calcular distribución'}
-        </button>
-      </form>
+        {/* Desktop: live trip summary that follows the scroll. */}
+        <aside className="surface sticky top-20 hidden p-5 lg:block">
+          <p className="eyebrow">Tu viaje</p>
+          <p className="mt-2 truncate text-lg font-semibold text-white">
+            {title || (destination ? `Viaje a ${destination}` : 'Sin nombre todavía')}
+          </p>
+          <p className="mt-1 flex items-start gap-1.5 text-xs text-[var(--ink-dim)]">
+            <FlagIcon className="mt-0.5 h-3.5 w-3.5 flex-none" />
+            <span className="line-clamp-2">{destination || 'Elegí el destino final'}</span>
+          </p>
+
+          <dl className="mt-5 grid grid-cols-2 gap-2 text-center">
+            <div className="surface-inset px-2 py-3">
+              <dt className="flex items-center justify-center gap-1 text-xs text-[var(--ink-dim)]">
+                <CarIcon className="h-3.5 w-3.5" /> Autos
+              </dt>
+              <dd className="mt-0.5 text-2xl font-bold tabular-nums text-white">{driverCount}</dd>
+            </div>
+            <div className="surface-inset px-2 py-3">
+              <dt className="flex items-center justify-center gap-1 text-xs text-[var(--ink-dim)]">
+                <UsersIcon className="h-3.5 w-3.5" /> Pasajeros
+              </dt>
+              <dd className="mt-0.5 text-2xl font-bold tabular-nums text-white">
+                {passengerCount}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-5">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="text-[var(--ink-dim)]">Asientos ocupados</span>
+              <span
+                className={`font-semibold tabular-nums ${overCapacity ? 'text-rose-300' : 'text-white'}`}
+              >
+                {passengerCount}/{totalSeats}
+              </span>
+            </div>
+            <div
+              className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"
+              role="progressbar"
+              aria-label="Asientos ocupados"
+              aria-valuemin={0}
+              aria-valuemax={totalSeats}
+              aria-valuenow={Math.min(passengerCount, totalSeats)}
+            >
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ${
+                  overCapacity ? 'bg-rose-400' : 'bg-gradient-to-r from-amber-500 to-yellow-300'
+                }`}
+                style={{ width: `${overCapacity ? 100 : seatPct}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[var(--ink-faint)]">
+              {overCapacity
+                ? 'Faltan asientos: sumá un conductor.'
+                : seatsFull
+                  ? 'Autos completos.'
+                  : `Quedan ${totalSeats - passengerCount} asiento${totalSeats - passengerCount === 1 ? '' : 's'} libre${totalSeats - passengerCount === 1 ? '' : 's'}.`}
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            form="planner-form"
+            disabled={loading || overCapacity}
+            className="btn-glow mt-5 w-full rounded-2xl py-3 text-base disabled:opacity-50"
+          >
+            <SparkIcon className="h-5 w-5" />
+            {submitLabel}
+          </button>
+          <p className="mt-3 text-center text-xs text-[var(--ink-faint)]">
+            {loggedIn ? 'Se guarda solo en Mis planes.' : 'Sin registro. Gratis.'}
+          </p>
+        </aside>
+      </div>
 
       {result && (
-        <section id="resultado" className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Resultado</h2>
+        <section id="resultado" ref={resultRef} className="rise scroll-mt-20 space-y-4">
+          <div>
+            <p className="eyebrow">Resultado</p>
+            <h2 className="mt-1 text-2xl font-bold text-white">
+              {title || `Viaje a ${destination}`}
+            </h2>
+          </div>
           {!result.saved && (
-            <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm text-slate-600">
-              💾 Este plan no quedó guardado.{' '}
-              <Link href="/register" className="link-sweep font-medium text-emerald-700">
-                Creá una cuenta gratis
-              </Link>{' '}
-              para guardar tus planes y compartirlos con un link.
+            <p className="surface-dashed flex items-start gap-2.5 p-3.5 text-sm text-[var(--ink-dim)]">
+              <SaveIcon className="mt-0.5 h-4 w-4 flex-none text-amber-300" />
+              <span>
+                Este plan no quedó guardado.{' '}
+                <Link href="/register" className="link-sweep link-amber">
+                  Creá una cuenta gratis
+                </Link>{' '}
+                para guardar tus planes y compartirlos con un link.
+              </span>
             </p>
           )}
           <PlanResultView

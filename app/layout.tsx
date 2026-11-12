@@ -40,6 +40,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <head>
+        {/* Tag the document before first paint so scroll-reveal elements start
+            hidden without a flash; without JS the class is never added and
+            everything simply renders visible. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* App Router root layout: this stylesheet applies to every page; the
@@ -50,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#030712]">
+      <body className="bg-[#030712] antialiased">
         <CityPulse />
         {children}
       </body>

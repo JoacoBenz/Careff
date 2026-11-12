@@ -7,6 +7,7 @@ import { AddressInput } from './address-input';
 import { RegionSelect, type RegionValue } from './region-select';
 import { useRegion } from './use-region';
 import { fieldBase, inputClass } from './form-styles';
+import { CarIcon, CheckIcon, UserIcon } from './icons';
 
 export interface JoinFormInitial {
   name?: string;
@@ -73,19 +74,21 @@ export function JoinGroupForm({
 
   if (joined) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-        <p className="text-3xl">🎉</p>
-        <h2 className="mt-2 text-lg font-semibold text-slate-900">
+      <div className="surface rise p-8 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/40">
+          <CheckIcon className="h-7 w-7" strokeWidth={2.4} />
+        </span>
+        <h2 className="mt-4 text-xl font-semibold text-white">
           ¡Listo, {name}! Ya estás en «{groupName}»
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1.5 text-sm text-[var(--ink-dim)]">
           {hasCar
             ? `Quedaste como conductor con ${seats} asiento${Number(seats) === 1 ? '' : 's'} libre${Number(seats) === 1 ? '' : 's'}.`
             : 'Cuando se arme el viaje, un auto te pasa a buscar.'}
         </p>
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-5 border-t border-[var(--line)] pt-4 text-sm text-[var(--ink-dim)]">
           ¿Organizás salidas vos también?{' '}
-          <Link href="/register" className="link-sweep font-medium text-emerald-700">
+          <Link href="/register" className="link-sweep link-amber">
             Creá tu grupo gratis
           </Link>
         </p>
@@ -93,77 +96,80 @@ export function JoinGroupForm({
     );
   }
 
+  const choice = (active: boolean) =>
+    `flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-amber-400 ${
+      active
+        ? 'border-amber-400/60 bg-amber-400/10 text-white'
+        : 'border-[var(--line-strong)] text-[var(--ink-dim)] hover:border-slate-500'
+    }`;
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-    >
-      <label className="block text-sm text-slate-600">
-        Tu nombre
+    <form onSubmit={onSubmit} className="surface space-y-4 p-5 sm:p-6">
+      <label className="block">
+        <span className="field-label">Tu nombre</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre"
           required
           maxLength={80}
-          className={`mt-1 ${inputClass}`}
+          className={inputClass}
         />
       </label>
-      <div className="text-sm text-slate-600">
-        Tu región
-        <div className="mt-1">
-          <RegionSelect value={region} onChange={setRegion} />
-        </div>
+      <div>
+        <span className="field-label">Tu región</span>
+        <RegionSelect value={region} onChange={setRegion} />
       </div>
-      <label className="block text-sm text-slate-600">
-        Tu dirección (desde dónde salís)
-        <div className="mt-1">
-          <AddressInput
-            value={address}
-            onChange={(v, c) => {
-              setAddress(v);
-              setCoords(c);
-            }}
-            region={{ country: region.country, provincia: region.provincia }}
-            placeholder="Av. Rivadavia 5000, Buenos Aires"
-            required
-            className={inputClass}
-          />
-        </div>
+      <label className="block">
+        <span className="field-label">Tu dirección (desde dónde salís)</span>
+        <AddressInput
+          value={address}
+          onChange={(v, c) => {
+            setAddress(v);
+            setCoords(c);
+          }}
+          region={{ country: region.country, provincia: region.provincia }}
+          placeholder="Av. Rivadavia 5000, Buenos Aires"
+          required
+          className={inputClass}
+        />
         {prefilledAddress && (
-          <span className="mt-1 block text-xs text-emerald-700">
-            ✓ Usamos tu dirección guardada — podés cambiarla si salís desde otro lado.
+          <span className="mt-1.5 flex items-center gap-1 text-xs text-emerald-300">
+            <CheckIcon className="h-3.5 w-3.5" />
+            Usamos tu dirección guardada — podés cambiarla si salís desde otro lado.
           </span>
         )}
       </label>
 
-      <fieldset className="rounded-lg border border-slate-200 p-3">
-        <legend className="px-1 text-sm font-medium text-slate-700">¿Tenés auto?</legend>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm">
+      <fieldset>
+        <legend className="field-label">¿Tenés auto?</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className={choice(hasCar)}>
             <input
               type="radio"
               name="hasCar"
               checked={hasCar}
               onChange={() => setHasCar(true)}
-              className="accent-emerald-600"
+              className="sr-only"
             />
-            🚗 Sí, llevo gente
+            <CarIcon className="h-5 w-5 flex-none text-amber-300" />
+            Sí, llevo gente
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className={choice(!hasCar)}>
             <input
               type="radio"
               name="hasCar"
               checked={!hasCar}
               onChange={() => setHasCar(false)}
-              className="accent-emerald-600"
+              className="sr-only"
             />
-            🙋 No, necesito que me lleven
+            <UserIcon className="h-5 w-5 flex-none text-amber-300" />
+            No, necesito que me lleven
           </label>
         </div>
         {hasCar && (
-          <label className="mt-3 block text-sm text-slate-600">
-            Asientos libres (sin contarte a vos)
+          <label className="mt-3 block">
+            <span className="field-label">Asientos libres (sin contarte a vos)</span>
             <input
               type="number"
               min={1}
@@ -171,14 +177,14 @@ export function JoinGroupForm({
               value={seats}
               onChange={(e) => setSeats(e.target.value)}
               required
-              className={`mt-1 w-24 ${fieldBase}`}
+              className={`w-24 ${fieldBase}`}
             />
           </label>
         )}
       </fieldset>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+        <p className="note note-error" role="alert">
           {error}
         </p>
       )}
@@ -186,7 +192,7 @@ export function JoinGroupForm({
       <button
         type="submit"
         disabled={loading || seatsInvalid}
-        className="btn-glow w-full rounded-xl py-2.5 disabled:opacity-50"
+        className="btn-glow w-full rounded-2xl py-3 disabled:opacity-50"
       >
         {loading ? 'Sumándote…' : 'Sumarme al grupo'}
       </button>

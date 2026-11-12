@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PlannerForm } from '@/components/planner-form';
 import { SiteHeader } from '@/components/site-header';
+import { PageHeader } from '@/components/page-header';
 import type { RegionValue } from '@/components/region-select';
 
 // Public on purpose (guest mode): anyone can compute a plan; saving requires
@@ -29,14 +30,12 @@ export default async function PlannerPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Planificar un viaje</h1>
-          <p className="text-sm text-slate-400">
-            Cargá conductores, pasajeros y destino. Careff combina todos los autos y arma el
-            conjunto de rutas más eficiente para el grupo.
-          </p>
-        </header>
+      <main className="mx-auto max-w-5xl px-4 py-10">
+        <PageHeader
+          eyebrow="Planificador"
+          title="Planificar un viaje"
+          description="Cargá conductores, pasajeros y destino. Careff combina todos los autos y arma el conjunto de rutas más eficiente para el grupo."
+        />
         <PlannerForm loggedIn={Boolean(session?.user)} initialRegion={initialRegion} />
       </main>
     </div>

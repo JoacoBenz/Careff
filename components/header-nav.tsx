@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { NavPill } from './nav-pill';
 import { LogoutButton } from './logout-button';
+import { CloseIcon, MenuIcon } from './icons';
 
 /**
  * Header navigation. Inline pills on >= sm; on phones it collapses into a
@@ -25,8 +26,8 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
         onClick={close}
         className={
           active(href)
-            ? 'block rounded-lg bg-amber-400/15 px-3 py-2.5 text-sm font-medium text-amber-300'
-            : 'block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10'
+            ? 'block rounded-xl bg-amber-400/15 px-3.5 py-3 text-sm font-medium text-amber-300'
+            : 'block rounded-xl px-3.5 py-3 text-sm font-medium text-slate-200 hover:bg-white/10'
         }
       >
         {label}
@@ -49,7 +50,7 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
         ) : (
           <>
             <NavPill href="/login">Iniciar sesión</NavPill>
-            <Link href="/register" className="btn-glow ml-1 rounded-full px-3.5 py-1.5 text-sm">
+            <Link href="/register" className="btn-glow ml-1.5 rounded-full px-4 py-1.5 text-sm">
               Crear cuenta
             </Link>
           </>
@@ -62,15 +63,15 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
         aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-lg text-slate-200 sm:hidden"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--line-strong)] text-slate-200 sm:hidden"
       >
-        {open ? '✕' : '☰'}
+        {open ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
       </button>
 
       {/* Phone: dropdown panel */}
       {open && (
-        <div className="absolute inset-x-0 top-14 border-b border-slate-800 bg-slate-950/95 shadow-xl backdrop-blur sm:hidden">
-          <nav className="mx-auto flex max-w-5xl flex-col gap-1 p-3">
+        <div className="rise absolute inset-x-0 top-16 border-b border-[var(--line)] bg-[#030712]/95 shadow-2xl backdrop-blur-xl sm:hidden">
+          <nav className="mx-auto flex max-w-6xl flex-col gap-1 p-3">
             {mobileLink('/planner', 'Planificador')}
             {loggedIn ? (
               <>
@@ -83,7 +84,7 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
                     close();
                     void signOut({ callbackUrl: '/' });
                   }}
-                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-400 hover:bg-white/10"
+                  className="rounded-xl px-3.5 py-3 text-left text-sm font-medium text-slate-400 hover:bg-white/10"
                 >
                   Cerrar sesión
                 </button>
@@ -94,7 +95,7 @@ export function HeaderNav({ loggedIn }: { loggedIn: boolean }) {
                 <Link
                   href="/register"
                   onClick={close}
-                  className="btn-glow mt-1 rounded-lg px-3 py-2.5 text-center text-sm"
+                  className="btn-glow mt-1 rounded-xl px-3 py-3 text-center text-sm"
                 >
                   Crear cuenta
                 </Link>

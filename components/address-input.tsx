@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { AddressSuggestion } from '@/lib/geo';
+import { PinIcon } from './icons';
 
 interface AddressInputProps {
   value: string;
@@ -83,7 +84,7 @@ export function AddressInput({
         autoComplete="off"
       />
       {open && (
-        <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+        <ul className="absolute z-30 mt-1.5 max-h-56 w-full overflow-auto rounded-xl border border-[var(--line-strong)] bg-[#0b1220] p-1 shadow-2xl">
           {suggestions.map((s, i) => (
             // Labels are deduped server-side; index guards against any
             // remaining collision (Nominatim can repeat coordinates).
@@ -94,9 +95,10 @@ export function AddressInput({
                   onChange(s.label, { lat: s.lat, lon: s.lon });
                   setOpen(false);
                 }}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-[var(--ink)] hover:bg-amber-400/10"
               >
-                📍 {s.label}
+                <PinIcon className="mt-0.5 h-4 w-4 flex-none text-amber-300" />
+                {s.label}
               </button>
             </li>
           ))}

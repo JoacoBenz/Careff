@@ -1,8 +1,36 @@
 @import 'tailwindcss';
 
-/* Typography: Space Grotesk for display, Inter for body (loaded in layout.tsx
-   with system fallbacks, so nothing breaks offline). */
+/* ============================================================================
+   Careff design system — "city at night".
+   One accent (sodium-vapor amber) on deep navy glass surfaces. Every page is
+   built from the primitives below so the landing, the planner and the saved
+   plans read as one product. Layout utilities come from Tailwind in markup.
+   ========================================================================== */
+
+:root {
+  --night: #030712;
+  --ink: #f8fafc;
+  --ink-dim: #a3b1c6;
+  --ink-faint: #64748b;
+  --line: rgba(148, 163, 184, 0.16);
+  --line-strong: rgba(148, 163, 184, 0.3);
+  --glass: rgba(15, 23, 42, 0.66);
+  --glass-raised: rgba(30, 41, 59, 0.6);
+  --amber: #fbbf24;
+  --amber-deep: #f59e0b;
+  --ok: #34d399;
+  --danger: #fb7185;
+  --wa: #25d366;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
 body {
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
   font-family:
     'Inter',
     ui-sans-serif,
@@ -18,17 +46,97 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+::selection {
+  background: rgba(251, 191, 36, 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---- surfaces ------------------------------------------------------------ */
+.surface {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 42%), var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 24px 60px -32px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.surface-inset {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.5);
+}
+
+.surface-dashed {
+  border: 1px dashed var(--line-strong);
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.surface-link {
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.surface-link:hover {
+  transform: translateY(-3px);
+  border-color: rgba(251, 191, 36, 0.45);
+  box-shadow:
+    0 28px 60px -30px rgba(0, 0, 0, 0.9),
+    0 0 34px -10px rgba(251, 191, 36, 0.35);
+}
+
+/* ---- type helpers -------------------------------------------------------- */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, #fde68a, var(--amber) 45%, #fb923c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+/* ---- buttons ------------------------------------------------------------- */
 /* Primary action: a runway-light button — warm gradient, amber glow, lifts on
    hover like it's taking off. */
 .btn-glow {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 55%, #fde047 110%);
   color: #1c1003;
   font-weight: 700;
   text-align: center;
   box-shadow:
     0 0 18px rgba(245, 158, 11, 0.35),
-    0 4px 14px rgba(0, 0, 0, 0.35);
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -40,7 +148,8 @@ h3 {
   filter: saturate(1.2);
   box-shadow:
     0 0 32px rgba(245, 158, 11, 0.55),
-    0 8px 22px rgba(0, 0, 0, 0.4);
+    0 8px 22px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .btn-glow:active:not(:disabled) {
@@ -49,12 +158,17 @@ h3 {
 
 .btn-glow:disabled {
   box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* Secondary action: night-glass button that warms up on hover. */
 .btn-glass {
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
   backdrop-filter: blur(6px);
   transition:
@@ -64,15 +178,164 @@ h3 {
     transform 0.2s ease;
 }
 
-.btn-glass:hover {
+.btn-glass:hover:not(:disabled) {
   border-color: rgba(251, 191, 36, 0.6);
   background: rgba(251, 191, 36, 0.12);
   box-shadow: 0 0 22px rgba(251, 191, 36, 0.25);
   transform: translateY(-2px);
 }
 
+.btn-glass:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--wa);
+  color: #04200f;
+  font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-wa:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 26px rgba(37, 211, 102, 0.4);
+}
+
+/* Small square icon button (remove row, close…). */
+.btn-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-faint);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: rgba(251, 113, 133, 0.5);
+  background: rgba(251, 113, 133, 0.08);
+}
+
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ---- form fields --------------------------------------------------------- */
+.field {
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.field::placeholder {
+  color: var(--ink-faint);
+}
+
+.field:hover {
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--amber);
+  background: rgba(2, 6, 23, 0.8);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18);
+}
+
+select.field {
+  appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3b1c6' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+}
+
+select.field option {
+  background: #0f172a;
+  color: var(--ink);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--amber);
+}
+
+/* ---- chips & notes ------------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+.chip-amber {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+  color: #fcd34d;
+}
+
+.chip-ok {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+  color: #6ee7b7;
+}
+
+.note {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.note-warn {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+  color: #fde68a;
+}
+
+.note-error {
+  border-color: rgba(251, 113, 133, 0.4);
+  background: rgba(251, 113, 133, 0.08);
+  color: #fecdd3;
+}
+
+.note-ok {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.08);
+  color: #a7f3d0;
+}
+
+/* ---- links --------------------------------------------------------------- */
 /* Text links: an underline that sweeps in from the left, in the link's own
-   color, plus a faint glow on dark backgrounds. */
+   color. */
 .link-sweep {
   position: relative;
   text-decoration: none;
@@ -96,12 +359,84 @@ h3 {
   transform: scaleX(1);
 }
 
-.text-amber-300.link-sweep:hover {
-  text-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
+.link-amber {
+  font-weight: 500;
+  color: #fcd34d;
 }
 
-/* Route-calculation loader: the route draws itself, dashes flow underneath,
-   nodes breathe, and each status message fades in. */
+/* ---- motion -------------------------------------------------------------- */
+/* Scroll/mount reveal. `.reveal` starts hidden only once JS has tagged the
+   document (see components/reveal.tsx), so content never stays invisible
+   without JavaScript. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0ms);
+}
+
+.js .reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+  animation: marquee 38s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Route drawing: used by the hero visual, the plan map and the loader. */
 @keyframes route-draw {
   0% {
     stroke-dashoffset: 100;
@@ -116,6 +451,15 @@ h3 {
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
+  }
+}
+
+@keyframes route-draw-once {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -152,8 +496,13 @@ h3 {
   animation: route-draw 3.2s ease-in-out infinite;
 }
 
+.route-draw-once {
+  stroke-dasharray: 100;
+  animation: route-draw-once 1.6s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
 .route-flow {
-  opacity: 0.35;
   animation: route-flow 1.2s linear infinite;
 }
 
@@ -167,11 +516,43 @@ h3 {
   animation: message-fade 0.35s ease-out;
 }
 
+/* Disclosure caret for <details> cards (saved plans, FAQ). */
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details .caret {
+  transition: transform 0.25s ease;
+}
+
+details[open] .caret {
+  transform: rotate(180deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .route-draw,
+  .route-draw-once,
   .route-flow,
   .node-pulse,
-  .message-fade {
+  .message-fade,
+  .rise,
+  .float,
+  .marquee-track {
     animation: none;
+  }
+
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

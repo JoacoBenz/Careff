@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { idSchema } from '@/lib/validators';
 import { SiteHeader } from '@/components/site-header';
+import { PageHeader } from '@/components/page-header';
 import { InviteBox, MemberList, GroupPlanner } from '@/components/group-detail';
 
 export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,27 +54,29 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{group.name}</h1>
-            <p className="text-sm text-slate-400">
-              {members.length} integrante{members.length === 1 ? '' : 's'}
-            </p>
-          </div>
-          <Link href="/groups" className="link-sweep text-sm text-amber-300">
-            ← Mis grupos
-          </Link>
-        </header>
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <Link
+          href="/groups"
+          className="link-sweep mb-4 inline-block text-sm text-[var(--ink-dim)] hover:text-white"
+        >
+          ← Mis grupos
+        </Link>
+        <PageHeader
+          eyebrow="Grupo"
+          title={group.name}
+          description={`${members.length} integrante${members.length === 1 ? '' : 's'}`}
+        />
 
-        <InviteBox inviteUrl={inviteUrl} groupName={group.name} />
+        <div className="space-y-6">
+          <InviteBox inviteUrl={inviteUrl} groupName={group.name} />
 
-        <section>
-          <h2 className="mb-3 font-semibold text-white">Integrantes</h2>
-          <MemberList groupId={group.id} members={members} />
-        </section>
+          <section>
+            <h2 className="mb-3 font-semibold text-white">Integrantes</h2>
+            <MemberList groupId={group.id} members={members} />
+          </section>
 
-        <GroupPlanner groupName={group.name} members={members} initialRegion={initialRegion} />
+          <GroupPlanner groupName={group.name} members={members} initialRegion={initialRegion} />
+        </div>
       </main>
     </div>
   );

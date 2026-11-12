@@ -5,6 +5,15 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PlanResultView } from '@/components/plan-result';
 import { SiteHeader } from '@/components/site-header';
+import { PageHeader } from '@/components/page-header';
+import {
+  CarIcon,
+  ChevronDownIcon,
+  FlagIcon,
+  PlusIcon,
+  RouteIcon,
+  UsersIcon,
+} from '@/components/icons';
 import type { CarpoolPlanResult } from '@/lib/carpool';
 
 export default async function PlansPage() {
@@ -24,40 +33,88 @@ export default async function PlansPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Mis planes</h1>
-          <Link href="/planner" className="btn-glow rounded-lg px-4 py-2 text-sm">
-            + Nuevo viaje
-          </Link>
-        </header>
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <PageHeader
+          eyebrow="Historial"
+          title="Mis planes"
+          description={
+            plans.length > 0
+              ? `${plans.length} plan${plans.length === 1 ? '' : 'es'} guardado${plans.length === 1 ? '' : 's'}. Tocá uno para ver las rutas y compartirlo.`
+              : undefined
+          }
+          action={
+            <Link href="/planner" className="btn-glow rounded-xl px-4 py-2.5 text-sm">
+              <PlusIcon className="h-4 w-4" />
+              Nuevo viaje
+            </Link>
+          }
+        />
         {plans.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-            <p className="text-3xl">🚗</p>
-            <p className="mt-2 text-slate-600">Todavía no guardaste ningún plan.</p>
-            <Link href="/planner" className="link-sweep font-medium text-emerald-700">
+          <div className="surface-dashed p-12 text-center">
+            <RouteIcon className="mx-auto h-10 w-10 text-[var(--ink-faint)]" />
+            <p className="mt-3 font-medium text-white">Todavía no guardaste ningún plan</p>
+            <p className="mt-1 text-sm text-[var(--ink-dim)]">
+              Los planes que calcules con tu cuenta aparecen acá.
+            </p>
+            <Link
+              href="/planner"
+              className="btn-glow mt-5 inline-flex rounded-xl px-5 py-2.5 text-sm"
+            >
               Armá el primero en un minuto
             </Link>
           </div>
         ) : (
-          <ul className="space-y-10">
-            {plans.map((plan) => (
-              <li key={plan.id}>
-                <div className="mb-3">
-                  <h2 className="text-lg font-semibold text-white">{plan.title}</h2>
-                  <p className="text-sm text-slate-400">
-                    🏁 {plan.destination} · {plan.createdAt.toLocaleDateString('es-AR')}
-                  </p>
-                </div>
-                <PlanResultView
-                  plan={plan.result as unknown as CarpoolPlanResult}
-                  title={plan.title}
-                  shareUrl={
-                    plan.shareToken ? `${protocol}://${host}/p/${plan.shareToken}` : undefined
-                  }
-                />
-              </li>
-            ))}
+          <ul className="space-y-3">
+            {plans.map((plan, i) => {
+              const result = plan.result as unknown as CarpoolPlanResult;
+              const riders = result.routes.reduce((sum, r) => sum + r.stops.length, 0);
+              return (
+                <li key={plan.id} className="rise" style={{ ['--d' as string]: `${i * 40}ms` }}>
+                  {/* Collapsed by default (newest open): 50 full plans is a wall. */}
+                  <details className="surface group" open={i === 0}>
+                    <summary className="flex items-center justify-between gap-4 p-4 sm:p-5">
+                      <div className="min-w-0">
+                        <h2 className="truncate font-semibold text-white">{plan.title}</h2>
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ink-dim)]">
+                          <FlagIcon className="h-3.5 w-3.5 flex-none" />
+                          <span className="truncate">{plan.destination}</span>
+                        </p>
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          <span className="chip">
+                            {plan.createdAt.toLocaleDateString('es-AR', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          <span className="chip">
+                            <CarIcon className="h-3.5 w-3.5" />
+                            {result.routes.length}
+                          </span>
+                          <span className="chip">
+                            <UsersIcon className="h-3.5 w-3.5" />
+                            {riders}
+                          </span>
+                          <span className="chip tabular-nums">
+                            {(result.totalDistanceMeters / 1000).toFixed(1)} km
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronDownIcon className="caret h-5 w-5 flex-none text-[var(--ink-faint)]" />
+                    </summary>
+                    <div className="border-t border-[var(--line)] p-4 sm:p-5">
+                      <PlanResultView
+                        plan={result}
+                        title={plan.title}
+                        shareUrl={
+                          plan.shareToken ? `${protocol}://${host}/p/${plan.shareToken}` : undefined
+                        }
+                      />
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>

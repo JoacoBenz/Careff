@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Province } from '@/lib/geo';
+import { PinIcon } from './icons';
 
 export interface RegionValue {
   country: string;
@@ -22,8 +23,7 @@ const COUNTRIES = [
   { code: 'es', name: 'España' },
 ];
 
-const selectClass =
-  'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500';
+const selectClass = 'field';
 
 /**
  * Country + province picker that scopes address autocomplete to a region (so
@@ -69,7 +69,7 @@ export function RegionSelect({
           const d = (await r.json()) as { province?: Province | null };
           if (d.province && !touched.current) {
             onChange({ country: 'ar', provincia: d.province.id, provinceName: d.province.nombre });
-            setAutoNote(`📍 ${d.province.nombre} (detectada por tu ubicación)`);
+            setAutoNote(`${d.province.nombre} (detectada por tu ubicación)`);
           }
         } catch {
           // ignore — stays manual
@@ -125,7 +125,12 @@ export function RegionSelect({
         </select>
       )}
       {autoNote && (
-        <p className="w-full text-xs text-emerald-700" role="status" aria-live="polite">
+        <p
+          className="flex w-full items-center gap-1.5 text-xs text-amber-300/90"
+          role="status"
+          aria-live="polite"
+        >
+          <PinIcon className="h-3.5 w-3.5" />
           {autoNote}
         </p>
       )}

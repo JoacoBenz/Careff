@@ -14,7 +14,7 @@ const ROUTE_PATH = 'M20 95 L70 38 L120 82 L168 28 L208 88';
 
 /**
  * Overlay shown while /api/carpool computes: a route draws itself across a
- * mini city map, a car drives it on loop, and the status line cycles through
+ * mini city map, a headlight drives it on loop, and the status line cycles through
  * what the engine is actually doing.
  */
 export function RouteLoading() {
@@ -29,26 +29,43 @@ export function RouteLoading() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#030712]/75 backdrop-blur-md"
       role="status"
       aria-live="polite"
     >
-      <div className="mx-4 w-full max-w-sm rounded-2xl border border-emerald-200 bg-white p-6 text-center shadow-2xl">
+      <div className="surface rise mx-4 w-full max-w-sm p-6 text-center">
         <svg viewBox="0 0 228 120" className="mx-auto w-full" aria-hidden>
           {/* city blocks */}
           {[24, 48, 72, 96].map((y) => (
-            <line key={`h${y}`} x1="0" y1={y} x2="228" y2={y} stroke="#d1fae5" strokeWidth="1" />
+            <line
+              key={`h${y}`}
+              x1="0"
+              y1={y}
+              x2="228"
+              y2={y}
+              stroke="rgba(148,163,184,0.14)"
+              strokeWidth="1"
+            />
           ))}
           {[38, 76, 114, 152, 190].map((x) => (
-            <line key={`v${x}`} x1={x} y1="0" x2={x} y2="120" stroke="#d1fae5" strokeWidth="1" />
+            <line
+              key={`v${x}`}
+              x1={x}
+              y1="0"
+              x2={x}
+              y2="120"
+              stroke="rgba(148,163,184,0.14)"
+              strokeWidth="1"
+            />
           ))}
 
           {/* route drawing itself, on loop */}
           <path
             d={ROUTE_PATH}
             fill="none"
-            stroke="#10b981"
+            stroke="#fde68a"
             strokeWidth="3"
+            opacity="0.3"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="8 7"
@@ -57,7 +74,7 @@ export function RouteLoading() {
           <path
             d={ROUTE_PATH}
             fill="none"
-            stroke="#059669"
+            stroke="#fbbf24"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -78,32 +95,33 @@ export function RouteLoading() {
                 cx={x}
                 cy={y}
                 r="7"
-                fill="#34d399"
+                fill="#fbbf24"
                 opacity="0.35"
                 className="node-pulse"
                 style={{ animationDelay: `${i * 0.3}s` }}
               />
-              <circle cx={x} cy={y} r="3.5" fill="#059669" />
+              <circle cx={x} cy={y} r="3.5" fill="#fbbf24" />
             </g>
           ))}
 
           {/* destination */}
-          <circle cx="208" cy="88" r="9" fill="#fbbf24" opacity="0.4" className="node-pulse" />
-          <text x="208" y="93" textAnchor="middle" fontSize="13">
-            🏁
-          </text>
+          <circle cx="208" cy="88" r="10" fill="#fff" opacity="0.35" className="node-pulse" />
+          <circle cx="208" cy="88" r="5" fill="#fff" />
 
           {/* the car drives the route */}
-          <text fontSize="15" dy="-7">
-            🚗
+          <g>
+            <circle r="7" fill="#fff" />
+            <circle r="3" fill="#f59e0b" />
             <animateMotion dur="3.2s" repeatCount="indefinite" path={ROUTE_PATH} />
-          </text>
+          </g>
         </svg>
 
-        <p className="mt-4 h-5 text-sm font-medium text-slate-700" key={messageIndex}>
+        <p className="mt-4 h-5 text-sm font-medium text-white" key={messageIndex}>
           <span className="message-fade inline-block">{MESSAGES[messageIndex]}</span>
         </p>
-        <p className="mt-1 text-xs text-slate-400">Esto tarda unos segundos con datos reales</p>
+        <p className="mt-1 text-xs text-[var(--ink-faint)]">
+          Esto tarda unos segundos con datos reales
+        </p>
       </div>
     </div>
   );
